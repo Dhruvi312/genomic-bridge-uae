@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nasaab | Interactive Video Demo & Walkthrough</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .serif-title { font-family: 'Playfair Display', serif; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center justify-center p-4">
+
+  <!-- Top Bar -->
+  <header class="w-full max-w-5xl flex items-center justify-between pb-4 border-b border-slate-800">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-700 flex items-center justify-center text-white font-bold text-sm shadow-md">
+        AGY
+      </div>
+      <div>
+        <h1 class="text-base font-bold text-white leading-tight">Nasaab (نسب) | Official Video Demonstration</h1>
+        <p class="text-xs text-slate-400">Future Health Digital Innovation Challenge • Abu Dhabi</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <a href="index.html" class="text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-xl transition">
+        ← Back to Live App
+      </a>
+      <button id="recordBtn" onclick="toggleRecording()" class="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-4 py-1.5 rounded-xl transition shadow-md">
+        <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+        <span id="recordBtnText">Record &amp; Download Video (.webm)</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Video Canvas Container (16:9 Aspect Ratio) -->
+  <main class="w-full max-w-5xl my-6 flex flex-col items-center">
+    <div class="relative w-full aspect-video bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800 flex items-center justify-center">
+      <canvas id="demoCanvas" width="1280" height="720" class="w-full h-full object-contain"></canvas>
+
+      <!-- Center Play Overlay when Paused -->
+      <div id="playOverlay" class="absolute inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center cursor-pointer transition-opacity" onclick="togglePlay()">
+        <div class="w-20 h-20 rounded-full bg-emerald-500/90 text-white flex items-center justify-center pl-1 shadow-2xl hover:scale-110 transition-transform">
+          <svg class="w-10 h-10" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Video Player Controls -->
+    <div class="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 mt-3 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <button id="playBtn" onclick="togglePlay()" class="w-9 h-9 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center transition">
+          <svg id="playIcon" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button onclick="restartDemo()" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition" title="Restart">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        </button>
+        <div class="text-xs font-mono text-slate-400">
+          <span id="currentTime" class="text-white font-bold">00:00</span> / <span id="totalTime">01:45</span>
+        </div>
+      </div>
+
+      <!-- Stage Timeline Dots -->
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <button onclick="seekToStage(0)" class="stage-dot px-2.5 py-1 rounded-lg text-[10px] font-bold bg-emerald-600 text-white" data-stage="0">Intro</button>
+        <button onclick="seekToStage(1)" class="stage-dot px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-400 hover:text-white" data-stage="1">Stage 1</button>
+        <button onclick="seekToStage(2)" class="stage-dot px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-400 hover:text-white" data-stage="2">Stage 2</button>
+        <button onclick="seekToStage(3)" class="stage-dot px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-400 hover:text-white" data-stage="3">Stage 3</button>
+        <button onclick="seekToStage(4)" class="stage-dot px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-400 hover:text-white" data-stage="4">Stage 4</button>
+        <button onclick="seekToStage(5)" class="stage-dot px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-400 hover:text-white" data-stage="5">Stage 5</button>
+        <button onclick="seekToStage(6)" class="stage-dot px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-400 hover:text-white" data-stage="6">Stage 6</button>
+      </div>
+
+      <!-- Voiceover Toggle -->
+      <div class="flex items-center gap-2">
+        <label class="text-xs text-slate-400 flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="voiceToggle" checked class="accent-emerald-500">
+          <span>AI Audio Narration</span>
+        </label>
+      </div>
+    </div>
+  </main>
+
+  <!-- Interactive JavaScript Video Engine -->
+  <script>
+    const canvas = document.getElementById('demoCanvas');
+    const ctx = canvas.getContext('2d');
+    const playOverlay = document.getElementById('playOverlay');
+    const playBtn = document.getElementById('playBtn');
+    const playIcon = document.getElementById('playIcon');
+    const currentTimeEl = document.getElementById('currentTime');
+    const voiceToggle = document.getElementById('voiceToggle');
+
+    let isPlaying = false;
+    let currentFrame = 0;
+    const FPS = 30;
+    const TOTAL_SECONDS = 105; // 1 min 45 secs
+    const TOTAL_FRAMES = TOTAL_SECONDS * FPS;
+
+    // Timeline Stages
+    const stages = [
+      { start: 0, end: 12, title: "Nasaab: Digital Bridge for Genomic Screening", sub: "Future Health Digital Innovation Challenge • Abu Dhabi", narration: "Welcome to Nasaab, a privacy-preserving, human-in-the-loop genomic screening bridge designed for Abu Dhabi's healthcare ecosystem." },
+      { start: 12, end: 27, title: "Stage 1: Identity & Granular Consent", sub: "UAE Pass Authentication & Raw VCF Lab Enclave Vaulting", narration: "Stage 1 establishes decentralized authentication via UAE Pass and dynamic 3-tier consent. Raw variant files never leave certified lab enclaves." },
+      { start: 27, end: 45, title: "Stage 2: Privacy-Preserving Matching (PSI)", sub: "Diffie-Hellman Private Set Intersection for Couples", narration: "Stage 2 computes couple compatibility using Private Set Intersection. If one partner carries a condition and the other does not, zero unshared data is leaked." },
+      { start: 45, end: 62, title: "Stage 3: Culturally Adapted Risk AI", sub: "Biological Normalization & 100-Person Icon Array", narration: "Stage 3 uses culturally adapted AI to normalize carrier biology, visually explaining 25% Mendelian odds through 100-person arrays and conversational teach-backs." },
+      { start: 62, end: 78, title: "Stage 4: Clinical Triage & Counselor Portal", sub: "Strict 3-Tier Automated Guardrail & Holding Alert", narration: "Stage 4 enforces clinical safety. Automated advice is strictly locked for Tier 3 concordant matches, triggering mandatory genetic counselor consultation." },
+      { start: 78, end: 92, title: "Stage 5: Values-Sensitive Care & Referral", sub: "Non-Directive Options Explorer & Encrypted Tokens", narration: "Stage 5 offers non-directive options including PGT-M via IVF, values clarification worksheets, and encrypted referral tokens to Cleveland Clinic Abu Dhabi." },
+      { start: 92, end: 105, title: "Stage 6: Auditable Governance & Malaffi HIE", sub: "Immutable Audit Ledger & Public Health Equity Metrics", narration: "Finally, Stage 6 delivers immutable audit trails of all system events, measuring comprehension equity and clinical escalation compliance." }
+    ];
+
+    let lastSpokenStage = -1;
+
+    function getCurrentStageIndex(second) {
+      for (let i = 0; i < stages.length; i++) {
+        if (second >= stages[i].start && second < stages[i].end) return i;
+      }
+      return stages.length - 1;
+    }
+
+    function speakNarration(text) {
+      if (!voiceToggle.checked || !('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.05;
+      utterance.pitch = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function draw() {
+      const second = currentFrame / FPS;
+      const stageIdx = getCurrentStageIndex(second);
+      const stage = stages[stageIdx];
+
+      // Trigger narration on stage change
+      if (stageIdx !== lastSpokenStage) {
+        lastSpokenStage = stageIdx;
+        speakNarration(stage.narration);
+        updateStageButtons(stageIdx);
+      }
+
+      // Clear Canvas Background
+      ctx.fillStyle = '#0B0F19';
+      ctx.fillRect(0, 0, 1280, 720);
+
+      // Top Header in Video
+      ctx.fillStyle = '#1E293B';
+      ctx.fillRect(0, 0, 1280, 70);
+
+      ctx.fillStyle = '#10B981';
+      ctx.font = 'bold 22px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('AGY | Nasaab (نسب)', 40, 44);
+
+      ctx.fillStyle = '#94A3B8';
+      ctx.font = '14px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('Abu Dhabi Department of Health • Malaffi HIE • UAE Pass', 270, 43);
+
+      // Stage Pill Indicator
+      ctx.fillStyle = '#0F766E';
+      roundRect(ctx, 1060, 20, 180, 32, 16, true, false);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 13px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText(`PHASE ${stageIdx + 1} OF ${stages.length}`, 1110, 41);
+
+      // Render Stage Specific Graphics
+      if (stageIdx === 0) renderIntro(second);
+      else if (stageIdx === 1) renderStage1(second);
+      else if (stageIdx === 2) renderStage2(second);
+      else if (stageIdx === 3) renderStage3(second);
+      else if (stageIdx === 4) renderStage4(second);
+      else if (stageIdx === 5) renderStage5(second);
+      else if (stageIdx === 6) renderStage6(second);
+
+      // Subtitles Banner at Bottom
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      roundRect(ctx, 60, 610, 1160, 80, 20, true, false);
+
+      ctx.fillStyle = '#34D399';
+      ctx.font = 'bold 15px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText(stage.title.toUpperCase(), 90, 640);
+
+      ctx.fillStyle = '#F8FAFC';
+      ctx.font = '15px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText(stage.narration, 90, 668);
+
+      // Update Time
+      const m = Math.floor(second / 60);
+      const s = Math.floor(second % 60);
+      currentTimeEl.innerText = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+
+      if (isPlaying) {
+        currentFrame++;
+        if (currentFrame >= TOTAL_FRAMES) {
+          currentFrame = 0;
+          isPlaying = false;
+          playOverlay.style.display = 'flex';
+          updatePlayIcon();
+        }
+        requestAnimationFrame(draw);
+      }
+    }
+
+    // Helper: Rounded Rectangle
+    function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+      if (fill) ctx.fill();
+      if (stroke) ctx.stroke();
+    }
+
+    // Render Scenes
+    function renderIntro(sec) {
+      // Background Glow
+      const grad = ctx.createRadialGradient(640, 320, 50, 640, 320, 500);
+      grad.addColorStop(0, 'rgba(15, 118, 110, 0.25)');
+      grad.addColorStop(1, 'rgba(11, 15, 25, 0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 70, 1280, 540);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 44px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Nasaab (نسب)', 640, 260);
+
+      ctx.fillStyle = '#34D399';
+      ctx.font = 'bold 24px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('A Privacy-Preserving Genomic Bridge for Abu Dhabi', 640, 310);
+
+      ctx.fillStyle = '#94A3B8';
+      ctx.font = '16px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('Future Health Digital Innovation Challenge • Microsoft • Inception G42 • MBZUAI', 640, 360);
+      ctx.fillText('Lead Innovator: Dhruvi Ohal', 640, 400);
+
+      ctx.textAlign = 'left';
+    }
+
+    function renderStage1(sec) {
+      drawCard(80, 120, 520, 440, 'UAE Pass Identity Verification', 'Level of Assurance (LoA High) Individual Biometric Auth');
+      ctx.fillStyle = '#E2E8F0';
+      ctx.font = '16px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('✓ Decentralized individual EID auth', 120, 220);
+      ctx.fillText('✓ No shared family accounts permitted', 120, 260);
+      ctx.fillText('✓ Cryptographic session tokens generated', 120, 300);
+
+      drawCard(680, 120, 520, 440, 'Granular Consent & Enclave Vault', '3-Tier Revocable Consent Matrix');
+      ctx.fillStyle = '#38BDF8';
+      ctx.fillText('• Tier 1: Personal Educational Discovery', 720, 220);
+      ctx.fillText('• Tier 2: Couple Cryptographic PSI Matching', 720, 260);
+      ctx.fillText('• Tier 3: Anonymized Extended Family Cascade', 720, 300);
+      ctx.fillStyle = '#A7F3D0';
+      ctx.fillText('🛡️ Raw VCF Files (200MB) stay inside lab enclave', 720, 360);
+    }
+
+    function renderStage2(sec) {
+      drawCard(80, 120, 1120, 440, 'Stage 2: Cryptographic Private Set Intersection (PSI)', 'Zero-Knowledge Autosomal Recessive Compatibility');
+
+      // Venn Diagram Circles
+      const pulse = Math.sin(sec * 3) * 5;
+      ctx.fillStyle = 'rgba(56, 107, 246, 0.4)';
+      ctx.beginPath();
+      ctx.arc(520, 320, 130 + pulse, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = 'rgba(232, 91, 136, 0.4)';
+      ctx.beginPath();
+      ctx.arc(760, 320, 130 + pulse, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 20px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Partner A (Saeed)', 450, 320);
+      ctx.fillText('Partner B (Fatima)', 830, 320);
+
+      ctx.fillStyle = '#FBBF24';
+      ctx.fillText('Concordant', 640, 305);
+      ctx.fillText('HBB Variant', 640, 335);
+      ctx.textAlign = 'left';
+
+      ctx.fillStyle = '#94A3B8';
+      ctx.font = '14px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('Mathematical Privacy Guarantee: Non-overlapping alleles are NEVER leaked to the other partner.', 280, 520);
+    }
+
+    function renderStage3(sec) {
+      drawCard(80, 120, 1120, 440, 'Stage 3: Culturally Adapted Risk AI & 100-Person Icon Array', 'Demystifying Probability & Destigmatizing Carrier Genetics');
+
+      // 100 Dots Array
+      for (let i = 0; i < 100; i++) {
+        const x = 120 + (i % 20) * 22;
+        const y = 220 + Math.floor(i / 20) * 26;
+        if (i < 25) ctx.fillStyle = '#10B981'; // 25% unaffected
+        else if (i < 75) ctx.fillStyle = '#3B82F6'; // 50% carrier
+        else ctx.fillStyle = '#F59E0B'; // 25% affected
+        ctx.beginPath();
+        ctx.arc(x, y, 7, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 16px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('Mendelian Recurrence Odds per Pregnancy:', 650, 220);
+      ctx.fillStyle = '#10B981'; ctx.fillText('• 25% Unaffected (Non-carrier)', 650, 260);
+      ctx.fillStyle = '#3B82F6'; ctx.fillText('• 50% Healthy Carrier (No symptoms)', 650, 300);
+      ctx.fillStyle = '#F59E0B'; ctx.fillText('• 25% Clinically Affected', 650, 340);
+
+      ctx.fillStyle = '#CBD5E1';
+      ctx.font = '14px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('Conversational Teach-Back Module verifies understanding before unlocking options.', 650, 400);
+    }
+
+    function renderStage4(sec) {
+      drawCard(80, 120, 1120, 440, 'Stage 4: Human-in-the-Loop Clinical Triage & Counselor Hub', 'Strict Automated Guardrails: Education Separated from Clinical Guidance');
+
+      // 3 Tiers
+      drawSubCard(120, 200, 320, 300, '🟢 Tier 1: Low Risk', 'No concordant matches. Automated plain-language summary + wellness review.', '#064E3B');
+      drawSubCard(480, 200, 320, 300, '🟡 Tier 2: Moderate Risk', 'Discordant individual carrier. Private results + opt-in sharing tools.', '#78350F');
+      drawSubCard(840, 200, 320, 300, '🔴 Tier 3: Complex / High', 'Concordant match (HBB). Automated advice LOCKED. Mandatory counselor triage.', '#7F1D1D');
+    }
+
+    function renderStage5(sec) {
+      drawCard(80, 120, 1120, 440, 'Stage 5: Values Clarification & Non-Directive Care Linkage', 'Empowering Autonomous Preconception Decision-Making');
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 18px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('1. Pre-Counseling Values Worksheet', 130, 230);
+      ctx.fillStyle = '#94A3B8';
+      ctx.font = '14px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('Explores religious comfort, family timelines, and fertility preferences privately.', 130, 260);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 18px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('2. Non-Directive Options Explorer', 130, 320);
+      ctx.fillStyle = '#94A3B8';
+      ctx.fillText('Neutral, objective pathways: PGT-M via IVF, natural birth with early testing, or counseling.', 130, 350);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 18px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('3. Closed-Loop Encrypted Referrals', 130, 410);
+      ctx.fillStyle = '#94A3B8';
+      ctx.fillText('Generates time-bound referral tokens to Cleveland Clinic Abu Dhabi & Kanad Hospital.', 130, 440);
+    }
+
+    function renderStage6(sec) {
+      drawCard(80, 120, 1120, 440, 'Stage 6: Auditable Governance & Multi-Dimensional Metrics', 'MedFlow Audit Ledger & DoH Public Health Analytics');
+
+      ctx.fillStyle = '#38BDF8';
+      ctx.font = 'bold 16px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('Immutable Audit Ledger ("Who viewed my data and when"):', 130, 220);
+
+      ctx.fillStyle = '#E2E8F0';
+      ctx.font = 'mono 13px monospace';
+      ctx.fillText('2026-02-04 14:15:42 | ZKP_MATCH | Saeed & Fatima | DH-PSI Execution | SUCCESS', 130, 260);
+      ctx.fillText('2026-02-04 14:28:30 | CREATE    | Malaffi Enclave| Tier 3 Hold Triggered | SUCCESS', 130, 290);
+      ctx.fillText('2026-02-04 14:32:15 | UPDATE    | Dr. Fatima (GC)| Counselor Case Opened | SUCCESS', 130, 320);
+
+      ctx.fillStyle = '#10B981';
+      ctx.font = 'bold 16px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText('✓ Comprehension Equity: >90% Teach-Back Pass Rate', 130, 390);
+      ctx.fillText('✓ Clinical Safety: 0 Cross-Family Leaks • 100% Tier 3 Triage Escalation', 130, 430);
+      ctx.fillText('✓ Ethical Principle: Success is NOT measured by marriage cancellation rates.', 130, 470);
+    }
+
+    function drawCard(x, y, w, h, title, subtitle) {
+      ctx.fillStyle = 'rgba(30, 41, 59, 0.7)';
+      roundRect(ctx, x, y, w, h, 24, true, false);
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1.5;
+      roundRect(ctx, x, y, w, h, 24, false, true);
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 22px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText(title, x + 35, y + 45);
+
+      ctx.fillStyle = '#94A3B8';
+      ctx.font = '14px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText(subtitle, x + 35, y + 75);
+    }
+
+    function drawSubCard(x, y, w, h, title, body, bg) {
+      ctx.fillStyle = bg;
+      roundRect(ctx, x, y, w, h, 18, true, false);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 16px "Plus Jakarta Sans", sans-serif';
+      ctx.fillText(title, x + 20, y + 40);
+
+      ctx.fillStyle = '#E2E8F0';
+      ctx.font = '13px "Plus Jakarta Sans", sans-serif';
+      wrapText(ctx, body, x + 20, y + 80, w - 40, 22);
+    }
+
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+      const words = text.split(' ');
+      let line = '';
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && n > 0) {
+          ctx.fillText(line, x, y);
+          line = words[n] + ' ';
+          y += lineHeight;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.fillText(line, x, y);
+    }
+
+    function updateStageButtons(idx) {
+      const dots = document.querySelectorAll('.stage-dot');
+      dots.forEach((dot, i) => {
+        if (i === idx) {
+          dot.className = 'stage-dot px-2.5 py-1 rounded-lg text-[10px] font-bold bg-emerald-600 text-white shadow-sm';
+        } else {
+          dot.className = 'stage-dot px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-800 text-slate-400 hover:text-white';
+        }
+      });
+    }
+
+    function togglePlay() {
+      isPlaying = !isPlaying;
+      playOverlay.style.display = isPlaying ? 'none' : 'flex';
+      updatePlayIcon();
+      if (isPlaying) requestAnimationFrame(draw);
+      else if ('speechSynthesis' in window) window.speechSynthesis.pause();
+    }
+
+    function updatePlayIcon() {
+      playIcon.innerHTML = isPlaying
+        ? '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>'
+        : '<path d="M8 5v14l11-7z"/>';
+    }
+
+    function restartDemo() {
+      currentFrame = 0;
+      lastSpokenStage = -1;
+      if (!isPlaying) togglePlay();
+      else requestAnimationFrame(draw);
+    }
+
+    function seekToStage(idx) {
+      currentFrame = stages[idx].start * FPS;
+      lastSpokenStage = -1;
+      if (!isPlaying) togglePlay();
+    }
+
+    // Direct Video Recording via Canvas Stream & MediaRecorder
+    let mediaRecorder;
+    let recordedChunks = [];
+    let isRecording = false;
+
+    function toggleRecording() {
+      if (!isRecording) {
+        startRecording();
+      } else {
+        stopRecording();
+      }
+    }
+
+    function startRecording() {
+      recordedChunks = [];
+      const stream = canvas.captureStream(30);
+      mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) recordedChunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'Nasaab_Genomic_Bridge_Demo.webm';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.getElementById('recordBtnText').innerText = '✓ Video Downloaded! Click to record again';
+      };
+
+      mediaRecorder.start();
+      isRecording = true;
+      document.getElementById('recordBtnText').innerText = 'Stop & Save Video';
+      if (!isPlaying) togglePlay();
+    }
+
+    function stopRecording() {
+      if (mediaRecorder && isRecording) {
+        mediaRecorder.stop();
+        isRecording = false;
+      }
+    }
+
+    // Initial render
+    draw();
+  </script>
+</body>
+</html>
