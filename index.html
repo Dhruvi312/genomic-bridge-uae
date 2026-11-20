@@ -1,0 +1,2480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AGY Genomic Bridge | Human-in-the-Loop Genomic Screening Platform</title>
+  
+  <!-- Google Fonts: Inter/Plus Jakarta Sans for UI, Playfair Display/Fraunces for Nucleus serif, Cairo & Tajawal for Arabic -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+            serif: ['"Playfair Display"', 'Fraunces', 'serif'],
+            arabic: ['Cairo', 'Tajawal', 'sans-serif'],
+          },
+          colors: {
+            brandGreen: {
+              50: '#F2F8F4',
+              100: '#E4F1E7',
+              200: '#C8E2CE',
+              300: '#A4CFAD',
+              400: '#7CB988',
+              500: '#5BA36A',
+              600: '#488555',
+              700: '#3A6A44',
+            },
+            nucleusBlue: '#386BF6',
+            nucleusOat: '#F6EFE6',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- React 18 & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  
+  <!-- Babel Standalone for JSX compilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F1F5F9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94A3B8;
+    }
+
+    .font-nucleus-serif {
+      font-family: 'Playfair Display', 'Fraunces', serif;
+    }
+    .rtl-direction {
+      direction: rtl;
+    }
+    .ltr-direction {
+      direction: ltr;
+    }
+  </style>
+</head>
+<body class="bg-[#F8FAFC] text-slate-800 antialiased min-h-screen selection:bg-emerald-500 selection:text-white">
+  <div id="root"></div>
+
+  <!-- Main React Application Script -->
+  <script type="text/babel">
+const { useState, useEffect, useMemo, useRef } = React;
+
+// -------------------------------------------------------------
+// ICONS COMPONENT HELPER (Using Lucide SVG rendering safely)
+// -------------------------------------------------------------
+const Icon = ({ name, size = 18, className = "", color }) => {
+  useEffect(() => {
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  }, [name]);
+
+  return <i data-lucide={name} className={`inline-block ${className}`} style={{ width: size, height: size, color: color || 'currentColor' }}></i>;
+};
+
+// -------------------------------------------------------------
+// TRANSLATION STRINGS (English & Emirati Arabic RTL)
+// -------------------------------------------------------------
+const i18n = {
+  en: {
+    appTitle: "AGY Genomic Bridge",
+    appSubtitle: "Privacy-Preserving Pre-marital Genomic Screening & Genetic Counseling",
+    roleCitizen: "Citizen & Couple Portal",
+    roleCounselor: "Genetic Counselor Hub",
+    roleGovernance: "Malaffi & DoH Governance",
+    scenario: "Scenario:",
+    scenarioConcordant: "Tier 3: Concordant Match (HBB)",
+    scenarioDiscordant: "Tier 2: Discordant (G6PD)",
+    scenarioClear: "Tier 1: Low Risk / Clear",
+    psiInspector: "ZKP / PSI Inspector",
+    stopSharing: "Stop sharing",
+    itsAMatch: "It's a match!",
+    concordantAlert: "Concordant Carrier Alert!",
+    matchSubtextClear: "We didn't find any recessive conditions that you and your partner both carry.",
+    matchSubtextConcordant: "Concordant match detected for Beta-Thalassemia (HBB). Automated reproductive advice is locked pending accredited counselor consultation.",
+    viewSummary: "View summary",
+    simulateBaby: "Simulate your baby",
+    simulateBabySub: "See your baby's predicted risk for hundreds of common conditions.",
+    showMe: "Show me",
+    results: "Results",
+    viewAll: "View all 2157 >",
+    carrierCount: "Carrier for {count} conditions",
+    healthSummary: "Health summary",
+    geneticRisks: "Genetic risks",
+    elevated: "Elevated",
+    average: "Average",
+    decreased: "Decreased",
+    extremelyLow: "Extremely low",
+    topGeneticRisks: "Your top genetic risks",
+    dashboard: "Dashboard",
+    newPatients: "New patients",
+    oldPatients: "Old patients",
+    analytics: "Analytics",
+    thisWeek: "This week",
+    events: "Events",
+    yourPatientsToday: "Your patients today",
+    allPatients: "All patients >",
+    supportChat: "Support Chat",
+    yourActivityToday: "Your activity today",
+    allActivity: "All activity",
+    privacyCompliance: "Privacy & Compliance",
+    consentHistory: "Consent History",
+    consentHistorySub: "Full audit trail of all consent events across UAE Pass and Malaffi enclaves",
+    downloadReceipt: "Download Consent Receipt (PDF)",
+    auditLogTitle: "Audit Log & Data Traceability",
+    auditLogSub: "Complete immutable record of all system activities, PSI sessions, and clinical views",
+    totalEvents: "Total Events",
+    successful: "Successful",
+    failedActions: "Failed Actions",
+    activeUsers: "Active Users",
+    selectTimeTitle: "Select an Appointment Time",
+    videoVisit: "Video Visit",
+    phoneCall: "Phone Call",
+    inPerson: "In-Person",
+    bookingSummary: "Booking Summary",
+    continueToDetails: "Continue to Patient Details ->",
+    teachBackTitle: "Interactive Teach-Back Checkpoint",
+    teachBackSub: "Before unlocking clinical pathways, confirm your understanding of carrier status.",
+  },
+  ar: {
+    appTitle: "جسر الجينوم | منصة الفحص الجينومي",
+    appSubtitle: "الفحص الجيني الوقائي لما قبل الزواج والاستشارات الوراثية المعتمدة في أبوظبي",
+    roleCitizen: "بوابة المواطن والمقبلين على الزواج",
+    roleCounselor: "مركز المرشد الوراثي المعتمد",
+    roleGovernance: "حوكمة ملفي ودائرة الصحة",
+    scenario: "السيناريو السريري:",
+    scenarioConcordant: "المستوى ٣: تطابق متوافق (ثلاسيميا بيتا)",
+    scenarioDiscordant: "المستوى ٢: غير متطابق (أنيميا الفول)",
+    scenarioClear: "المستوى ١: سليم / خطورة منخفضة",
+    psiInspector: "فاحص التشفير الصفري (PSI)",
+    stopSharing: "إيقاف المشاركة",
+    itsAMatch: "توافق جيني سليم!",
+    concordantAlert: "تنبيه: تطابق في حمل طفرة مشتركة!",
+    matchSubtextClear: "لم يتم العثور على أي طفرات وراثية متنحية مشتركة قد تنتقل إلى الأبناء بإذن الله.",
+    matchSubtextConcordant: "تم رصد حمل مشترك لطفرة ثلاسيميا بيتا (HBB). تم إيقاف التوصيات الآلية احتراماً للبروتوكول واستدعاء المرشد الوراثي.",
+    viewSummary: "عرض الملخص السريري",
+    simulateBaby: "محاكاة صحة الأطفال المستقبلية",
+    simulateBabySub: "استكشف احتمالات الصفات الوراثية للأجيال القادمة استناداً لبيانات برنامج الجينوم الإماراتي.",
+    showMe: "استكشاف",
+    results: "النتائج الجينومية",
+    viewAll: "عرض كافة الجينات ٢١٥٧ >",
+    carrierCount: "حامل لـ {count} طفرات متنحية سليمة",
+    healthSummary: "الملخص الصحي",
+    geneticRisks: "المخاطر الجينية المحتملة",
+    elevated: "مرتفع",
+    average: "متوسط",
+    decreased: "منخفض",
+    extremelyLow: "منخفض جداً",
+    topGeneticRisks: "أبرز الجينات المفحوصة",
+    dashboard: "لوحة التحكم السريرية",
+    newPatients: "مرضى جدد",
+    oldPatients: "استشارات متابعة",
+    analytics: "التحليلات الوراثية",
+    thisWeek: "هذا الأسبوع",
+    events: "المواعيد السريرية",
+    yourPatientsToday: "حالات اليوم",
+    allPatients: "جميع الحالات >",
+    supportChat: "المحادثة السريرية الفورية",
+    yourActivityToday: "نشاطك اليوم",
+    allActivity: "كافة الأنشطة",
+    privacyCompliance: "الخصوصية والامتثال",
+    consentHistory: "سجل الموافقات والتفويضات",
+    consentHistorySub: "سجل تدقيق غير قابل للتعديل لجميع تفويضات الهوية الرقمية ومنظومة ملفي",
+    downloadReceipt: "تحميل إيصال الموافقة الرقمي (PDF)",
+    auditLogTitle: "سجل التدقيق والتتبع الرقمي",
+    auditLogSub: "سجل غير قابل للتعديل لكافة عمليات الفحص المشفر وعمليات تبادل البيانات الصحية",
+    totalEvents: "إجمالي العمليات",
+    successful: "ناجحة",
+    failedActions: "محاولات مرفوضة",
+    activeUsers: "المستخدمون النشطون",
+    selectTimeTitle: "حجز موعد استشارة وراثية",
+    videoVisit: "استشارة مرئية عن بعد",
+    phoneCall: "مكالمة هاتفية",
+    inPerson: "استشارة حضورية في المركز",
+    bookingSummary: "ملخص الحجز السريري",
+    continueToDetails: "المتابعة لتفاصيل الموعد ->",
+    teachBackTitle: "اختبار الفهم التفاعلي (Teach-Back)",
+    teachBackSub: "قبل استعراض الخيارات الإنجابية، يرجى تأكيد استيعاب معنى كونك حاملاً لطفرة وراثية سليمة.",
+  }
+};
+
+// -------------------------------------------------------------
+// MAIN APP COMPONENT
+// -------------------------------------------------------------
+function App() {
+  const [role, setRole] = useState('citizen'); // 'citizen' | 'counselor' | 'governance'
+  const [citizenTab, setCitizenTab] = useState('preview'); // 'home' | 'preview' | 'appointments' | 'privacy'
+  const [scenario, setScenario] = useState('concordant'); // 'concordant' | 'discordant' | 'clear'
+  const [lang, setLang] = useState('en'); // 'en' | 'ar'
+  
+  // Modals & Interactivity
+  const [showPsiModal, setShowPsiModal] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [showValuesModal, setShowValuesModal] = useState(false);
+  const [showTeachBackModal, setShowTeachBackModal] = useState(false);
+  const [teachBackPassed, setTeachBackPassed] = useState(false);
+  const [teachBackScore, setTeachBackScore] = useState(null);
+
+  // Counselor Dashboard Interactive State
+  const [chatMessages, setChatMessages] = useState([
+    { id: 1, sender: 'counselor', text: 'Hey, Sarah! How can I help you today regarding your pre-marital genomic review?', time: '6:02 pm' },
+    { id: 2, sender: 'patient', text: 'Hey Dr. Fatima! Saeed and I just finished the PSI match. Does being a carrier for Beta-Thalassemia mean I have the illness?', time: '6:06 pm' }
+  ]);
+  const [chatInput, setChatInput] = useState('');
+
+  // Booking Interactive State
+  const [meetingType, setMeetingType] = useState('video');
+  const [selectedDay, setSelectedDay] = useState(24);
+  const [selectedSlot, setSelectedSlot] = useState('10:00 AM');
+  const [bookingConfirmed, setBookingConfirmed] = useState(false);
+
+  // Audit Logs (Appends dynamically)
+  const [auditLogs, setAuditLogs] = useState([
+    { id: 1, time: '2026-02-04 14:32:15', user: 'Dr. Fatima Al-Hashimi', role: 'Doctor', action: 'UPDATE', module: 'Patient Records', details: 'Updated risk counseling notes for Couple #AE-9482 (Tier 3)', status: 'Success' },
+    { id: 2, time: '2026-02-04 14:28:30', user: 'Malaffi Enclave', role: 'System', action: 'CREATE', module: 'Alerts', details: 'Automated Tier 3 hold triggered for concordant HBB variant', status: 'Success' },
+    { id: 3, time: '2026-02-04 14:15:42', user: 'Saeed Al-Nuaimi', role: 'Citizen', action: 'ZKP_MATCH', module: 'PSI Protocol', details: 'Executed 2-party Private Set Intersection with Partner Fatima', status: 'Success' },
+    { id: 4, time: '2026-02-04 14:10:18', user: 'Admin Al-Zaabi', role: 'Administrator', action: 'UPDATE', module: 'Roles & Permissions', details: 'Verified DoH genetic counselor accreditation license #GC-883', status: 'Success' },
+    { id: 5, time: '2026-02-04 14:05:55', user: 'UAE Pass Gateway', role: 'Auth', action: 'CREATE', module: 'Consent Vault', details: 'Biometric authorization granted for Couple Cryptographic Session', status: 'Success' },
+    { id: 6, time: '2026-02-04 13:58:22', user: 'External Lab Partner', role: 'Lab', action: 'READ', module: 'Patient Records', details: 'Attempted to query raw unencrypted VCF file without token', status: 'Failed' },
+    { id: 7, time: '2026-02-04 13:45:10', user: 'Fatima Al-Zaabi', role: 'Citizen', action: 'UPDATE', module: 'Consent Vault', details: 'Revoked Tier 3 Extended Family Cascade Notification permission', status: 'Success' },
+    { id: 8, time: '2026-02-04 13:30:45', user: 'Dr. Daniel Reynolds', role: 'Doctor', action: 'READ', module: 'Appointments', details: 'Opened pre-counseling values worksheet for session #APT-2026-09', status: 'Success' },
+  ]);
+
+  const t = i18n[lang];
+  const isRTL = lang === 'ar';
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+    const newMsg = {
+      id: Date.now(),
+      sender: 'patient',
+      text: chatInput,
+      time: '6:08 pm'
+    };
+    setChatMessages(prev => [...prev, newMsg]);
+    setChatInput('');
+
+    // Counselor automated empathetic reply simulation
+    setTimeout(() => {
+      setChatMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        sender: 'counselor',
+        text: 'That is a completely normal question! Being a healthy carrier means you have normal health with zero symptoms. It only becomes significant for reproductive planning when both partners carry the same gene.',
+        time: '6:09 pm'
+      }]);
+    }, 1200);
+  };
+
+  const addAuditLog = (action, module, details, status = 'Success') => {
+    const newEntry = {
+      id: Date.now(),
+      time: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      user: role === 'citizen' ? 'Saeed (Citizen)' : 'Dr. Fatima (Counselor)',
+      role: role === 'citizen' ? 'Citizen' : 'Doctor',
+      action,
+      module,
+      details,
+      status
+    };
+    setAuditLogs(prev => [newEntry, ...prev]);
+  };
+
+  return (
+    <div className={`min-h-screen bg-[#F8FAFC] text-slate-800 ${isRTL ? 'rtl-direction font-arabic' : 'ltr-direction font-sans'}`}>
+      
+      {/* ========================================================= */}
+      {/* TOP MASTER CONTROLLER BAR (Ecosystem switcher & Scenario) */}
+      {/* ========================================================= */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 lg:px-8 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-emerald-400 flex items-center justify-center text-white shadow-sm shadow-emerald-200">
+            <span className="font-bold text-sm tracking-wider">AGY</span>
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="font-bold text-slate-900 text-sm md:text-base leading-tight">{t.appTitle}</h1>
+              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                Abu Dhabi DoH & Malaffi HIE
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 hidden sm:block">{t.appSubtitle}</p>
+          </div>
+        </div>
+
+        {/* Center Controls: Role Switcher */}
+        <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200/80 text-xs font-semibold">
+          <button
+            onClick={() => { setRole('citizen'); addAuditLog('READ', 'Citizen Portal', 'Switched context to Citizen/Couple Portal'); }}
+            className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${role === 'citizen' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}
+          >
+            <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+            {t.roleCitizen}
+          </button>
+          <button
+            onClick={() => { setRole('counselor'); addAuditLog('READ', 'Counselor Hub', 'Accessed Clinical Triage Workspace'); }}
+            className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${role === 'counselor' ? 'bg-[#74B47C] text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-200"></span>
+            {t.roleCounselor}
+          </button>
+          <button
+            onClick={() => { setRole('governance'); addAuditLog('READ', 'Audit Log', 'Accessed MedFlow Compliance Audit Ledger'); }}
+            className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 ${role === 'governance' ? 'bg-slate-900 text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}
+          >
+            <span className="w-2 h-2 rounded-full bg-indigo-400"></span>
+            {t.roleGovernance}
+          </button>
+        </div>
+
+        {/* Right Tools: Clinical Scenario & PSI Modal & Language */}
+        <div className="flex items-center gap-2">
+          {/* Clinical Scenario Selector */}
+          <div className="flex items-center gap-1.5 bg-amber-50/80 border border-amber-200 px-2 py-1 rounded-xl text-xs">
+            <span className="text-amber-800 font-medium hidden md:inline">{t.scenario}</span>
+            <select
+              value={scenario}
+              onChange={(e) => {
+                setScenario(e.target.value);
+                addAuditLog('UPDATE', 'Scenario Engine', `Switched clinical scenario to: ${e.target.value}`);
+              }}
+              className="bg-transparent text-amber-950 font-bold outline-hidden cursor-pointer"
+            >
+              <option value="concordant">🔴 Tier 3: Concordant (HBB)</option>
+              <option value="discordant">🟡 Tier 2: Discordant (G6PD)</option>
+              <option value="clear">🟢 Tier 1: Clear Screen</option>
+            </select>
+          </div>
+
+          {/* Cryptographic Inspector Button */}
+          <button
+            onClick={() => setShowPsiModal(true)}
+            className="flex items-center gap-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 px-3 py-1.5 rounded-xl text-xs font-semibold transition"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+            </span>
+            {t.psiInspector}
+          </button>
+
+          {/* Language Toggle */}
+          <button
+            onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}
+            className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 transition"
+          >
+            {lang === 'en' ? '🇦🇪 العربية' : '🇺🇸 English'}
+          </button>
+        </div>
+      </header>
+
+      {/* ========================================================= */}
+      {/* MAIN VIEWPORT SWITCHER ACCORDING TO USER ROLES & SAMPLES  */}
+      {/* ========================================================= */}
+
+      {/* ROLE 1: CITIZEN & COUPLE VIEW (Replicating Images 3, 4, 5, 2) */}
+      {role === 'citizen' && (
+        <CitizenPortalView
+          citizenTab={citizenTab}
+          setCitizenTab={setCitizenTab}
+          scenario={scenario}
+          t={t}
+          isRTL={isRTL}
+          setShowPsiModal={setShowPsiModal}
+          setShowReceiptModal={setShowReceiptModal}
+          setShowValuesModal={setShowValuesModal}
+          setShowTeachBackModal={setShowTeachBackModal}
+          teachBackPassed={teachBackPassed}
+          selectedDay={selectedDay}
+          setSelectedDay={setSelectedDay}
+          selectedSlot={selectedSlot}
+          setSelectedSlot={setSelectedSlot}
+          meetingType={meetingType}
+          setMeetingType={setMeetingType}
+          bookingConfirmed={bookingConfirmed}
+          setBookingConfirmed={setBookingConfirmed}
+          addAuditLog={addAuditLog}
+        />
+      )}
+
+      {/* ROLE 2: GENETIC COUNSELOR VIEW (Replicating Image 1: Green Medical Dashboard) */}
+      {role === 'counselor' && (
+        <CounselorDashboardView
+          t={t}
+          isRTL={isRTL}
+          scenario={scenario}
+          chatMessages={chatMessages}
+          chatInput={chatInput}
+          setChatInput={setChatInput}
+          handleSendMessage={handleSendMessage}
+          setShowValuesModal={setShowValuesModal}
+        />
+      )}
+
+      {/* ROLE 3: MALAFFI & DOH GOVERNANCE (Replicating Image 6: MedFlow Audit Log) */}
+      {role === 'governance' && (
+        <MedFlowAuditView
+          t={t}
+          isRTL={isRTL}
+          auditLogs={auditLogs}
+        />
+      )}
+
+      {/* ========================================================= */}
+      {/* MODALS: PSI Cryptographic Inspector, Receipts, Values     */}
+      {/* ========================================================= */}
+      {showPsiModal && (
+        <CryptographicPsiModal
+          scenario={scenario}
+          onClose={() => setShowPsiModal(false)}
+          isRTL={isRTL}
+        />
+      )}
+
+      {showReceiptModal && (
+        <ConsentReceiptModal
+          onClose={() => setShowReceiptModal(false)}
+          isRTL={isRTL}
+        />
+      )}
+
+      {showValuesModal && (
+        <ValuesClarificationModal
+          onClose={() => setShowValuesModal(false)}
+          isRTL={isRTL}
+          onSave={() => {
+            setShowValuesModal(false);
+            addAuditLog('CREATE', 'Care Plans', 'Submitted private pre-counseling values clarification responses');
+          }}
+        />
+      )}
+
+      {showTeachBackModal && (
+        <TeachBackModal
+          onClose={() => setShowTeachBackModal(false)}
+          onPass={(score) => {
+            setTeachBackPassed(true);
+            setTeachBackScore(score);
+            setShowTeachBackModal(false);
+            addAuditLog('UPDATE', 'Teach-Back Engine', `Citizen passed genetic comprehension check with score ${score}/3`);
+          }}
+          isRTL={isRTL}
+        />
+      )}
+    </div>
+  );
+}
+
+// =======================================================================
+// COMPONENT 1: CITIZEN PORTAL (Incorporating Images 2, 3, 4, 5)
+// =======================================================================
+function CitizenPortalView({
+  citizenTab,
+  setCitizenTab,
+  scenario,
+  t,
+  isRTL,
+  setShowPsiModal,
+  setShowReceiptModal,
+  setShowValuesModal,
+  setShowTeachBackModal,
+  teachBackPassed,
+  selectedDay,
+  setSelectedDay,
+  selectedSlot,
+  setSelectedSlot,
+  meetingType,
+  setMeetingType,
+  bookingConfirmed,
+  setBookingConfirmed,
+  addAuditLog
+}) {
+  return (
+    <div className="flex flex-col md:flex-row min-h-[calc(100vh-65px)]">
+      
+      {/* Nucleus Left Sidebar Navigation (Matching Image 3 & 4) */}
+      <aside className="w-full md:w-64 bg-[#FAF7F2] border-r border-[#EBE4D8] p-5 flex flex-col justify-between shrink-0">
+        <div>
+          {/* Nucleus Logo */}
+          <div className="flex items-center gap-2.5 px-2 py-3 mb-6">
+            <svg className="w-6 h-6 text-slate-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" />
+              <circle cx="12" cy="12" r="3" fill="currentColor" />
+            </svg>
+            <span className="font-bold text-xl tracking-tight text-slate-900">Nucleus</span>
+          </div>
+
+          {/* Navigation Links */}
+          <nav className="space-y-1.5 text-sm font-medium">
+            <button
+              onClick={() => setCitizenTab('home')}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl transition ${
+                citizenTab === 'home'
+                  ? 'bg-[#EFE8DD] text-slate-900 font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-[#F2ECE0]'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+              <span>{isRTL ? 'الرئيسية (الملخص الصحي)' : 'Home (Health summary)'}</span>
+            </button>
+
+            <button
+              onClick={() => setCitizenTab('preview')}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl transition ${
+                citizenTab === 'preview'
+                  ? 'bg-[#EFE8DD] text-slate-900 font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-[#F2ECE0]'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              <span>{isRTL ? 'تخطيط الأسرة (التوافق الجيني)' : 'Family planning (Preview)'}</span>
+            </button>
+
+            <button
+              onClick={() => setCitizenTab('appointments')}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl transition ${
+                citizenTab === 'appointments'
+                  ? 'bg-[#EFE8DD] text-slate-900 font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-[#F2ECE0]'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <span>{isRTL ? 'حجز استشارة وراثية (Wellness+)' : 'Counseling (Wellness+)'}</span>
+            </button>
+
+            <button
+              onClick={() => setCitizenTab('privacy')}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl transition ${
+                citizenTab === 'privacy'
+                  ? 'bg-[#EFE8DD] text-slate-900 font-semibold'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-[#F2ECE0]'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+              <span>{isRTL ? 'الخصوصية والموافقات' : 'Privacy & Compliance'}</span>
+            </button>
+          </nav>
+        </div>
+
+        {/* Status indicator bottom */}
+        <div className="pt-4 border-t border-[#EBE4D8] flex items-center justify-between text-xs text-slate-500">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span>{isRTL ? 'مشفر عبر ملفي والرمز السري' : 'Up-to-date (Malaffi HIE)'}</span>
+          </div>
+          <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-mono">UAE Pass</span>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-1 p-5 md:p-8 lg:p-10 max-w-6xl overflow-y-auto">
+        
+        {/* SUBTAB 1: FAMILY PLANNING (Matching Image 3) */}
+        {citizenTab === 'preview' && (
+          <div className="space-y-8 animate-fadeIn">
+            {/* Header Title with Serif Typography */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="font-nucleus-serif text-4xl md:text-5xl text-slate-900 tracking-tight">
+                  {isRTL ? 'تخطيط الأسرة' : 'Family planning'}
+                </h1>
+                <p className="text-slate-600 text-sm mt-1">
+                  {isRTL ? 'فحص التوافق المشفر بتقنية الحساب الآمن متعدد الأطراف (PSI)' : 'Privacy-preserving couple compatibility matching powered by Private Set Intersection'}
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  alert(isRTL ? 'تم إلغاء جلسة التوافق فورياً وحذف الرموز المشفرة.' : 'Session revoked. Cryptographic compatibility tokens wiped from memory.');
+                  addAuditLog('DELETE', 'PSI Protocol', 'Citizen revoked partner compatibility session token');
+                }}
+                className="flex items-center gap-2 bg-[#E2EDF8] hover:bg-[#D5E5F4] text-blue-700 text-xs md:text-sm font-semibold px-4 py-2 rounded-full transition"
+              >
+                <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+                {t.stopSharing}
+              </button>
+            </div>
+
+            {/* Top Twin Cards: Overlapping Circles Card + Simulate Baby Card */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              
+              {/* Blue Venn Diagram Card (Image 3) */}
+              <div className={`rounded-3xl p-8 text-white relative overflow-hidden transition-all shadow-md ${
+                scenario === 'concordant' ? 'bg-gradient-to-br from-indigo-700 via-blue-700 to-amber-700' : 'bg-gradient-to-br from-[#386BF6] to-[#2B54C8]'
+              }`}>
+                {/* Background Venn Diagram Graphics */}
+                <div className="flex justify-center mb-6 relative">
+                  <div className="flex items-center justify-center -space-x-5">
+                    <div className="w-16 h-16 rounded-full border-2 border-white/60 bg-white/20 backdrop-blur-xs"></div>
+                    <div className="w-16 h-16 rounded-full border-2 border-white/60 bg-white/20 backdrop-blur-xs flex items-center justify-center">
+                      {scenario === 'concordant' ? (
+                        <span className="text-amber-300 font-bold text-xl">⚠️</span>
+                      ) : (
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-center space-y-2">
+                  <h3 className="text-2xl md:text-3xl font-bold tracking-tight">
+                    {scenario === 'concordant' ? t.concordantAlert : t.itsAMatch}
+                  </h3>
+                  <p className="text-blue-100 text-sm leading-relaxed max-w-sm mx-auto">
+                    {scenario === 'concordant' ? t.matchSubtextConcordant : t.matchSubtextClear}
+                  </p>
+                </div>
+
+                <div className="mt-8 flex justify-center">
+                  <button
+                    onClick={() => {
+                      if (scenario === 'concordant') {
+                        setCitizenTab('appointments');
+                      } else {
+                        setCitizenTab('home');
+                      }
+                    }}
+                    className="bg-white hover:bg-slate-50 text-slate-900 font-bold text-sm px-6 py-2.5 rounded-full shadow-sm transition"
+                  >
+                    {scenario === 'concordant' ? (isRTL ? 'حجز موعد إلزامي مع المرشد' : 'Book Mandatory Counselor Visit') : t.viewSummary}
+                  </button>
+                </div>
+
+                {/* Privacy Guarantee Pill */}
+                <div className="mt-5 text-center">
+                  <span className="text-[11px] text-white/80 bg-black/20 px-3 py-1 rounded-full backdrop-blur-xs">
+                    {isRTL ? 'ضمان الخصوصية: لا يتم كشف الطفرات غير المشتركة للطرف الآخر أبداً' : 'Zero-Knowledge Guarantee: Non-overlapping carrier variants remain 100% private'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Oatmeal / Beige Card: Simulate Baby (Image 3) */}
+              <div className="bg-[#F6EFE6] rounded-3xl p-8 text-slate-900 flex flex-col justify-between border border-[#E9DFD2] shadow-xs">
+                <div>
+                  {/* Circular Avatars */}
+                  <div className="flex items-center -space-x-2 mb-6">
+                    <div className="w-8 h-8 rounded-full bg-[#386BF6] text-white text-xs font-bold flex items-center justify-center border-2 border-white">
+                      P
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-[#E85B88] text-white text-xs font-bold flex items-center justify-center border-2 border-white">
+                      J
+                    </div>
+                  </div>
+
+                  <h3 className="font-nucleus-serif text-3xl md:text-4xl text-slate-900 tracking-tight leading-snug">
+                    {t.simulateBaby}
+                  </h3>
+                  <p className="text-slate-600 text-sm mt-3 leading-relaxed">
+                    {t.simulateBabySub}
+                  </p>
+                </div>
+
+                <div className="mt-8 flex items-center justify-between">
+                  <button
+                    onClick={() => setCitizenTab('home')}
+                    className="bg-white hover:bg-slate-50 text-slate-900 font-bold text-sm px-7 py-2.5 rounded-full border border-slate-200/80 shadow-xs transition"
+                  >
+                    {t.showMe}
+                  </button>
+
+                  <button
+                    onClick={() => setShowValuesModal(true)}
+                    className="text-xs text-amber-800 underline font-semibold hover:text-amber-950"
+                  >
+                    {isRTL ? 'ورقة توضيح القيم الشخصية' : 'Values Clarification'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Results Section (Matching Image 3) */}
+            <div className="space-y-4 pt-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-lg font-bold text-slate-900">{t.results}</h4>
+                <button
+                  onClick={() => setCitizenTab('home')}
+                  className="text-xs font-semibold text-slate-500 hover:text-slate-800"
+                >
+                  {t.viewAll}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Peter / Partner A Card */}
+                <div className="bg-white rounded-2xl p-4 border border-slate-200 flex items-center justify-between shadow-xs">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-sm text-slate-900">
+                        {isRTL ? 'سعيد النعيمي (الطرف الأول)' : 'Peter (Self) >'}
+                      </h5>
+                      <p className="text-xs text-slate-500">
+                        {scenario === 'concordant'
+                          ? (isRTL ? 'حامل لطفرة ثلاسيميا بيتا (HBB) + أخرى' : 'Carrier for 4 conditions (inc. HBB)')
+                          : scenario === 'discordant'
+                          ? (isRTL ? 'حامل لطفرة أنيميا الفول G6PD (فردي)' : 'Carrier for 2 conditions (G6PD)')
+                          : (isRTL ? 'لم يتم رصد طفرات عالية الخطورة' : 'Carrier for 0 overlapping conditions')}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">EID Verified</span>
+                </div>
+
+                {/* Julia / Partner B Card */}
+                <div className="bg-white rounded-2xl p-4 border border-slate-200 flex items-center justify-between shadow-xs">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-full bg-[#E85B88] text-white flex items-center justify-center">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-sm text-slate-900">
+                        {isRTL ? 'فاطمة الزعابي (الطرف الثاني)' : 'Julia (Partner) >'}
+                      </h5>
+                      <p className="text-xs text-slate-500">
+                        {scenario === 'concordant'
+                          ? (isRTL ? 'حاملة لطفرة ثلاسيميا بيتا (HBB)' : 'Carrier for 1 condition (HBB concordant)')
+                          : (isRTL ? 'محمية بالخصوصية التامة (لا تطابق)' : 'No overlapping autosomal recessive match')}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">ZKP Linked</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Next Steps Card & Teach-Back Checkpoint */}
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-base font-bold text-slate-900">
+                    {isRTL ? 'الخطوات التالية والتحقق من الفهم' : 'Next steps & Teach-Back Verification'}
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    {isRTL ? 'أبوظبي تضمن لك استشارة مجانية مع مرشد وراثي معتمد قبل اتخاذ أي قرار' : 'UAE Department of Health guarantees pre-marital counseling with an accredited genetic counselor'}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setShowTeachBackModal(true)}
+                  className={`text-xs font-bold px-4 py-2 rounded-full border transition ${
+                    teachBackPassed
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                      : 'bg-amber-500 text-white hover:bg-amber-600 border-amber-600 shadow-xs'
+                  }`}
+                >
+                  {teachBackPassed
+                    ? (isRTL ? '✓ تم اجتياز اختبار الفهم' : '✓ Teach-Back Passed')
+                    : (isRTL ? 'ابدأ اختبار الفهم التفاعلي' : 'Start Teach-Back Check')}
+                </button>
+              </div>
+
+              {/* Autonomy & Options Explorer (Stage 5) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/70 text-xs">
+                  <div className="font-bold text-slate-800 mb-1">{isRTL ? '١. الإنجاب الطبيعي والفحص المبكر' : '1. Natural Conception + Testing'}</div>
+                  <p className="text-slate-500 leading-normal">
+                    {isRTL ? 'المضي قدماً في الزواج مع فحص جيني مبكر أثناء الحمل أو لحديثي الولادة.' : 'Proceeding with marriage accompanied by targeted prenatal or newborn diagnostic testing.'}
+                  </p>
+                </div>
+                <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/70 text-xs">
+                  <div className="font-bold text-slate-800 mb-1">{isRTL ? '٢. الفحص الوراثي للأجنة (PGT-M)' : '2. PGT-M via IVF'}</div>
+                  <p className="text-slate-500 leading-normal">
+                    {isRTL ? 'اختيار الأجنة غير المصابة عبر أطفال الأنابيب لتفادي توارث المرض.' : 'Pre-implantation Genetic Testing ensures only unaffected embryos are transferred.'}
+                  </p>
+                </div>
+                <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/70 text-xs">
+                  <div className="font-bold text-slate-800 mb-1">{isRTL ? '٣. استشارة وراثية خاصة' : '3. Specialized Counseling'}</div>
+                  <p className="text-slate-500 leading-normal">
+                    {isRTL ? 'جلسة دعم محايدة وسرية لمناقشة كافة الخيارات مع العائلة.' : 'Non-directive, culturally sensitive discussion tailored to your personal and religious values.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SUBTAB 2: HEALTH SUMMARY (Matching Image 4) */}
+        {citizenTab === 'home' && (
+          <div className="space-y-8 animate-fadeIn">
+            {/* Search Header */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="relative flex-1 max-w-lg">
+                <input
+                  type="text"
+                  placeholder={isRTL ? 'ابحث عن مرض أو جين مفحوص...' : 'Search by disease or gene'}
+                  className="w-full bg-white border border-slate-200 rounded-full pl-10 pr-4 py-2 text-xs text-slate-700 outline-hidden focus:border-slate-400"
+                />
+                <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowValuesModal(true)}
+                  className="flex items-center gap-1.5 bg-white border border-slate-200 text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-slate-50"
+                >
+                  <svg className="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 14 14"></polyline>
+                  </svg>
+                  {isRTL ? 'استبيان القيم' : 'Values'}
+                </button>
+                <div className="w-8 h-8 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center justify-center">
+                  T
+                </div>
+              </div>
+            </div>
+
+            {/* Title */}
+            <div>
+              <h1 className="font-nucleus-serif text-4xl md:text-5xl text-slate-900 tracking-tight">
+                {t.healthSummary}
+              </h1>
+              <p className="text-slate-500 text-xs mt-1">
+                {isRTL ? 'نتائج الفحص الجينومي الفردي المعتمد من دائرة الصحة - أبوظبي' : 'Individual genomic carrier profile processed within Malaffi secure clinical enclave'}
+              </p>
+            </div>
+
+            {/* Genetic Risks Main Card (Image 4) */}
+            <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-xs space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-slate-900">{t.geneticRisks}</h3>
+                <button
+                  onClick={() => alert(isRTL ? 'رابط المشاركة المشفر منسوخ' : 'Encrypted sharing link copied')}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full transition"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="18" cy="5" r="3"></circle>
+                    <circle cx="6" cy="12" r="3"></circle>
+                    <circle cx="18" cy="19" r="3"></circle>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                  </svg>
+                  <span>Share</span>
+                </button>
+              </div>
+
+              {/* Segmented Bar Graphic (Exact Match to Image 4) */}
+              <div className="space-y-2">
+                <div className="h-4 w-full rounded-full flex overflow-hidden bg-slate-100 p-0.5">
+                  <div className="h-full bg-amber-400 rounded-l-full" style={{ width: '6%' }}></div>
+                  <div className="h-full bg-blue-500" style={{ width: '8%' }}></div>
+                  <div className="h-full bg-emerald-500" style={{ width: '12%' }}></div>
+                  <div className="h-full bg-gradient-to-r from-emerald-300 via-emerald-200 to-emerald-100 rounded-r-full" style={{ width: '74%' }}></div>
+                </div>
+
+                {/* Counters Row */}
+                <div className="grid grid-cols-4 gap-2 pt-2 text-center sm:text-left">
+                  <div>
+                    <div className="text-2xl font-bold text-amber-500">6</div>
+                    <div className="text-xs text-slate-500 flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-xs bg-amber-400 inline-block"></span>
+                      {t.elevated}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-blue-600">8</div>
+                    <div className="text-xs text-slate-500 flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-xs bg-blue-500 inline-block"></span>
+                      {t.average}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-emerald-600">7</div>
+                    <div className="text-xs text-slate-500 flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-xs bg-emerald-500 inline-block"></span>
+                      {t.decreased}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-slate-700">603</div>
+                    <div className="text-xs text-slate-500 flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-xs bg-emerald-300 inline-block"></span>
+                      {t.extremelyLow}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* De-Stigmatizing Educational Banner (Stage 3) */}
+              <div className="p-4 bg-emerald-50/80 rounded-2xl border border-emerald-200 flex items-start gap-3">
+                <span className="text-xl">🧬</span>
+                <div className="text-xs text-emerald-950 space-y-1">
+                  <span className="font-bold block">
+                    {isRTL ? 'الحقيقة البيولوجية: كل إنسان يحمل طفرات متنحية طبيعية' : 'Universal Biology: Every Human is a Healthy Carrier of Recessive Variants'}
+                  </span>
+                  <p className="text-emerald-800 leading-relaxed">
+                    {isRTL
+                      ? 'كونك حاملاً لطفرة لا يعني أنك مريض أو تعاني من خلل، بل أنت شخص سليم معافى تماماً. الخطر الاحتمالي ينشأ فقط إذا كان كلا الزوجين يحملان نفس الطفرة المتنحية في نفس الجين.'
+                      : 'Carrying a recessive variant is a standard biological reality, not a defect or illness. You remain in robust health with zero symptoms; risk only manifests probabilistically if both reproductive partners share pathogenic variants in the exact same gene.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* 100-Person Icon Array Visualizer (Stage 3) */}
+            <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    {isRTL ? 'مصفوفة الـ ١٠٠ شخص: توضيح الاحتمالات الوراثية' : '100-Person Icon Array: Visualizing Autosomal Recessive Odds'}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {isRTL ? 'عند تطابق طفرة ثلاسيميا بيتا بين الزوجين، لكل حمل نسبة محددة رياضياً:' : 'For concordant autosomal recessive carriers, each pregnancy carries exact Mendelian probabilities:'}
+                  </p>
+                </div>
+                <span className="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full">
+                  25% : 50% : 25%
+                </span>
+              </div>
+
+              {/* 100 Dots / Person Icons Grid */}
+              <div className="grid grid-cols-10 sm:grid-cols-20 gap-1.5 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                {Array.from({ length: 100 }).map((_, i) => {
+                  let colorClass = 'bg-emerald-500'; // 25% healthy non-carrier
+                  let title = '25% Non-Carrier (Unaffected)';
+                  if (i >= 25 && i < 75) {
+                    colorClass = 'bg-blue-500'; // 50% healthy carrier
+                    title = '50% Healthy Carrier (Unaffected)';
+                  } else if (i >= 75) {
+                    colorClass = 'bg-amber-500'; // 25% affected
+                    title = '25% Clinically Affected (Condition expressed)';
+                  }
+                  return (
+                    <div
+                      key={i}
+                      title={title}
+                      className={`h-4 w-4 rounded-full ${colorClass} hover:scale-125 transition-transform cursor-pointer`}
+                    />
+                  );
+                })}
+              </div>
+
+              {/* Legend */}
+              <div className="flex flex-wrap items-center gap-6 text-xs text-slate-600 pt-1">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+                  <span>{isRTL ? '٢٥٪ سليم تماماً (غير حامل)' : '25% Unaffected (Non-carrier)'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+                  <span>{isRTL ? '٥٠٪ سليم حاملاً للطفرة (لا تظهر أعراض)' : '50% Healthy Carrier (No symptoms)'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-amber-500"></span>
+                  <span>{isRTL ? '٢٥٪ احتمالية إصابة سريرية' : '25% Clinically Affected'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Top Genetic Risks Carousel / Cards (Image 4) */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-base font-bold text-slate-900">{t.topGeneticRisks}</h4>
+                <div className="flex items-center gap-1">
+                  <button className="w-7 h-7 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100">&lt;</button>
+                  <button className="w-7 h-7 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100">&gt;</button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {/* Card 1 */}
+                <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl">🩸</span>
+                    <span className="text-xs font-semibold text-slate-600">~ 21.5%</span>
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-sm text-slate-900">Beta-Thalassemia Trait</h5>
+                    <p className="text-xs text-slate-500">HBB gene variant (c.92+1G&gt;A)</p>
+                  </div>
+                  <div className="pt-2">
+                    <span className="text-[11px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">+8% regional</span>
+                  </div>
+                </div>
+
+                {/* Card 2 */}
+                <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl">🫀</span>
+                    <span className="text-xs font-semibold text-slate-600">~ 6.4%</span>
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-sm text-slate-900">G6PD Enzymatic Trait</h5>
+                    <p className="text-xs text-slate-500">Mediterranean variant (c.563C&gt;T)</p>
+                  </div>
+                  <div className="pt-2">
+                    <span className="text-[11px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">+5% regional</span>
+                  </div>
+                </div>
+
+                {/* Card 3 */}
+                <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl">🧬</span>
+                    <span className="text-xs font-semibold text-slate-600">~ 19.5%</span>
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-sm text-slate-900">Cystic Fibrosis (CFTR)</h5>
+                    <p className="text-xs text-slate-500">Variant delta-F508 screened</p>
+                  </div>
+                  <div className="pt-2">
+                    <span className="text-[11px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">Not detected</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SUBTAB 3: APPOINTMENT BOOKING (Matching Image 5: Wellness+) */}
+        {citizenTab === 'appointments' && (
+          <div className="space-y-8 animate-fadeIn">
+            {/* Breadcrumb & Header */}
+            <div>
+              <div className="flex items-center gap-2 text-xs text-slate-400 mb-2">
+                <span>Home</span>
+                <span>&gt;</span>
+                <span>Doctor Search</span>
+                <span>&gt;</span>
+                <span>Dr. Fatima Al-Hashimi (Genetics)</span>
+                <span>&gt;</span>
+                <span className="text-slate-700 font-bold">Select Time</span>
+              </div>
+              <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
+                {t.selectTimeTitle}
+              </h1>
+              <p className="text-xs text-slate-500 mt-1">
+                {isRTL ? 'استشارة مجانية معتمدة من دائرة الصحة ضمن برنامج الفحص الجيني لما قبل الزواج' : 'Fully subsidized pre-marital genetic counseling accredited by Abu Dhabi Department of Health'}
+              </p>
+            </div>
+
+            {/* Main Booking Layout: 2 Columns */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              
+              {/* Left Column (2 Cols): Method selector + Calendar + Slot Grid */}
+              <div className="lg:col-span-2 space-y-6">
+                
+                {/* Meeting Mode Selector (Image 5) */}
+                <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-3">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    {isRTL ? 'كيف تفضل عقد الجلسة؟' : 'How would you like to meet?'}
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setMeetingType('video')}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition ${
+                        meetingType === 'video'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                      </svg>
+                      {t.videoVisit}
+                    </button>
+
+                    <button
+                      onClick={() => setMeetingType('phone')}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition ${
+                        meetingType === 'phone'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                      </svg>
+                      {t.phoneCall}
+                    </button>
+
+                    <button
+                      onClick={() => setMeetingType('inperson')}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-bold transition ${
+                        meetingType === 'inperson'
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M3 21h18"></path>
+                        <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"></path>
+                      </svg>
+                      {t.inPerson} (Cleveland Clinic Abu Dhabi)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Calendar & Time Slots Grid (Image 5) */}
+                <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Calendar Widget */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="font-bold text-sm text-slate-900">October 2026</span>
+                      <div className="flex items-center gap-1">
+                        <button className="w-6 h-6 rounded-full border border-slate-200 flex items-center justify-center text-xs text-slate-500">&lt;</button>
+                        <button className="w-6 h-6 rounded-full border border-slate-200 flex items-center justify-center text-xs text-slate-500">&gt;</button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-400 mb-2">
+                      <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1 text-center text-xs">
+                      {Array.from({ length: 31 }).map((_, i) => {
+                        const day = i + 1;
+                        const isSelected = day === selectedDay;
+                        const isAvailable = day >= 20;
+                        return (
+                          <button
+                            key={day}
+                            disabled={!isAvailable}
+                            onClick={() => setSelectedDay(day)}
+                            className={`h-8 w-8 mx-auto rounded-full flex items-center justify-center font-medium transition ${
+                              isSelected
+                                ? 'bg-blue-600 text-white font-bold shadow-xs'
+                                : isAvailable
+                                ? 'text-slate-800 hover:bg-slate-100'
+                                : 'text-slate-300 cursor-not-allowed'
+                            }`}
+                          >
+                            {day}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Time Slots */}
+                  <div className="border-t md:border-t-0 md:border-l border-slate-200 md:pl-6 pt-4 md:pt-0 space-y-4">
+                    <div>
+                      <div className="font-bold text-sm text-slate-900">Thursday, Oct {selectedDay}</div>
+                      <div className="text-xs text-slate-500">Video Visit • 30 mins (Gulf Standard Time)</div>
+                    </div>
+
+                    {/* Morning */}
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Morning</span>
+                      <div className="grid grid-cols-3 gap-2">
+                        {['09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM'].map(slot => (
+                          <button
+                            key={slot}
+                            onClick={() => setSelectedSlot(slot)}
+                            className={`py-1.5 px-2 rounded-xl text-xs font-semibold transition border ${
+                              selectedSlot === slot
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            {slot}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Afternoon */}
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Afternoon</span>
+                      <div className="grid grid-cols-3 gap-2">
+                        {['01:00 PM', '01:30 PM', '02:00 PM', '03:00 PM', '03:30 PM', '04:00 PM'].map(slot => (
+                          <button
+                            key={slot}
+                            onClick={() => setSelectedSlot(slot)}
+                            className={`py-1.5 px-2 rounded-xl text-xs font-semibold transition border ${
+                              selectedSlot === slot
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            {slot}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Policies Callout (Image 5) */}
+                <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-2xl flex items-start gap-3 text-xs text-blue-900">
+                  <span className="text-base">ℹ️</span>
+                  <div>
+                    <span className="font-bold block mb-1">Appointment Policies & Preparation</span>
+                    <ul className="list-disc pl-4 space-y-0.5 text-blue-800">
+                      <li>Free consultation covered 100% by Thiqa / DOH Genomic Program.</li>
+                      <li>Preparation: Complete the private <button onClick={() => setShowValuesModal(true)} className="underline font-bold">Values Clarification Worksheet</button> prior to meeting.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Booking Summary Card (Image 5) */}
+              <div className="space-y-4">
+                <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-md space-y-5">
+                  <h3 className="font-bold text-slate-900 text-lg">{t.bookingSummary}</h3>
+
+                  {/* Doctor Profile */}
+                  <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-700 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                      FA
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-slate-900">Dr. Fatima Al-Hashimi</h4>
+                      <p className="text-xs text-slate-500">Accredited Genetic Counselor (DoH)</p>
+                      <div className="flex items-center gap-1 text-xs text-amber-500 mt-0.5">
+                        <span>★ 4.9</span>
+                        <span className="text-slate-400">(86 reviews)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Details List */}
+                  <div className="space-y-3 text-xs">
+                    <div>
+                      <span className="text-slate-400 block font-medium">DATE & TIME</span>
+                      <span className="font-bold text-slate-800">Thursday, Oct {selectedDay}, 2026 • {selectedSlot}</span>
+                    </div>
+
+                    <div>
+                      <span className="text-slate-400 block font-medium">VISIT TYPE</span>
+                      <span className="font-bold text-slate-800">
+                        {meetingType === 'video' ? 'Secure Telehealth (Malaffi Encrypted)' : meetingType === 'phone' ? 'Encrypted Voice Call' : 'In-Person Consultation'}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-slate-400 block font-medium">PATIENT</span>
+                      <span className="font-bold text-slate-800">Saeed Al-Nuaimi & Fatima Al-Zaabi</span>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                      <span className="text-slate-500">Estimated Cost:</span>
+                      <span className="font-bold text-emerald-600 text-base">AED 0.00 (Thiqa Covered)</span>
+                    </div>
+                  </div>
+
+                  {/* Action Button */}
+                  <button
+                    onClick={() => {
+                      setBookingConfirmed(true);
+                      addAuditLog('CREATE', 'Appointments', `Confirmed telehealth genetic consultation for Oct ${selectedDay} at ${selectedSlot}`);
+                    }}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm py-3 rounded-2xl shadow-sm transition"
+                  >
+                    {bookingConfirmed ? '✓ Appointment Confirmed!' : t.continueToDetails}
+                  </button>
+
+                  {/* Verification Badges (Image 5) */}
+                  <div className="flex items-center justify-center gap-4 text-[10px] font-bold text-slate-400 pt-2">
+                    <span className="flex items-center gap-1">🔒 SECURE</span>
+                    <span className="flex items-center gap-1">🛡️ MALAFFI HIE</span>
+                    <span className="flex items-center gap-1">✓ DOH VERIFIED</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SUBTAB 4: PRIVACY & COMPLIANCE (Matching Image 2) */}
+        {citizenTab === 'privacy' && (
+          <PrivacyComplianceView
+            t={t}
+            isRTL={isRTL}
+            setShowReceiptModal={setShowReceiptModal}
+            addAuditLog={addAuditLog}
+          />
+        )}
+      </main>
+    </div>
+  );
+}
+
+// =======================================================================
+// COMPONENT 2: COUNSELOR DASHBOARD VIEW (Matching Image 1: Green Medical Dashboard)
+// =======================================================================
+function CounselorDashboardView({
+  t,
+  isRTL,
+  scenario,
+  chatMessages,
+  chatInput,
+  setChatInput,
+  handleSendMessage,
+  setShowValuesModal
+}) {
+  return (
+    <div className="flex flex-col lg:flex-row min-h-[calc(100vh-65px)] bg-[#EDF5EF] p-4 lg:p-6 gap-6 font-sans">
+      
+      {/* Green Left Navigation Sidebar (Exact Match to Image 1) */}
+      <aside className="w-full lg:w-20 bg-[#74B47C] rounded-[32px] p-4 flex lg:flex-col items-center justify-between shrink-0 shadow-lg shadow-emerald-900/10 text-white">
+        {/* Top Logo Icon */}
+        <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-white cursor-pointer hover:bg-white/30 transition">
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M4 4h7v7H4zm10 0h7v7h-7zm0 10h7v7h-7zM4 14h7v7H4z" />
+          </svg>
+        </div>
+
+        {/* Middle Nav Icons */}
+        <div className="flex lg:flex-col items-center gap-5">
+          <button className="w-10 h-10 rounded-xl bg-white text-[#74B47C] flex items-center justify-center shadow-sm">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+          </button>
+
+          <button className="w-10 h-10 rounded-xl text-white/80 hover:text-white hover:bg-white/10 flex items-center justify-center transition">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+          </button>
+
+          <button className="w-10 h-10 rounded-xl text-white/80 hover:text-white hover:bg-white/10 flex items-center justify-center transition relative">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span className="w-2 h-2 rounded-full bg-amber-400 absolute top-2 right-2"></span>
+          </button>
+
+          <button className="w-10 h-10 rounded-xl text-white/80 hover:text-white hover:bg-white/10 flex items-center justify-center transition">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+          </button>
+
+          <button className="w-10 h-10 rounded-xl text-white/80 hover:text-white hover:bg-white/10 flex items-center justify-center transition">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+        </div>
+
+        {/* Bottom User Avatar & Logout */}
+        <div className="flex lg:flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-full border-2 border-white/60 overflow-hidden bg-white/30 flex items-center justify-center font-bold text-xs">
+            FA
+          </div>
+          <button className="text-white/80 hover:text-white">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+      </aside>
+
+      {/* Center Main Dashboard Area (Matching Image 1) */}
+      <main className="flex-1 bg-white rounded-[36px] p-6 lg:p-8 shadow-sm flex flex-col justify-between space-y-6">
+        
+        {/* Top Header with Search and Date (Image 1) */}
+        <div>
+          <div className="flex items-center justify-between gap-4 mb-6">
+            {/* Pill Search Input */}
+            <div className="relative flex-1 max-w-md">
+              <input
+                type="text"
+                placeholder="Search patients, genomic IDs, variants..."
+                className="w-full bg-[#F3F7F4] rounded-full pl-5 pr-12 py-2.5 text-xs text-slate-800 outline-hidden"
+              />
+              <button className="absolute right-4 top-3 text-slate-500">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+              </button>
+            </div>
+
+            {/* Icons: Theme & Alerts */}
+            <div className="flex items-center gap-3">
+              <button className="w-9 h-9 rounded-full bg-[#F3F7F4] flex items-center justify-center text-slate-600 hover:bg-[#E8F0EA]">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+              </button>
+              <button className="w-9 h-9 rounded-full bg-[#F3F7F4] flex items-center justify-center text-slate-600 relative hover:bg-[#E8F0EA]">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+                <span className="w-2 h-2 rounded-full bg-[#74B47C] absolute top-2 right-2"></span>
+              </button>
+            </div>
+          </div>
+
+          {/* Title Row */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-3xl font-extrabold text-slate-900">{t.dashboard}</h2>
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <span>Wednesday, 24.10.2026</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 4 Stat Cards Row (Image 1) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          
+          {/* Donut Chart Card */}
+          <div className="bg-[#FAFCFA] border border-slate-100 rounded-3xl p-5 flex flex-col items-center justify-center text-center shadow-xs">
+            <div className="relative w-24 h-24 mb-3 flex items-center justify-center">
+              <svg className="w-24 h-24 transform -rotate-90">
+                <circle cx="48" cy="48" r="38" stroke="#E2EDE4" strokeWidth="8" fill="transparent" />
+                <circle cx="48" cy="48" r="38" stroke="#74B47C" strokeWidth="8" strokeDasharray="238" strokeDashoffset="95" strokeLinecap="round" fill="transparent" />
+              </svg>
+              <div className="absolute text-center">
+                <span className="text-lg font-black text-slate-900 block leading-tight">784</span>
+                <span className="text-[10px] text-slate-400 font-medium">Couples</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 text-[11px] text-slate-500 font-medium">
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#74B47C]"></span>Female 40%</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#A8D3AD]"></span>Male 60%</span>
+            </div>
+          </div>
+
+          {/* New Patients Card */}
+          <div className="bg-[#FAFCFA] border border-slate-100 rounded-3xl p-5 flex flex-col justify-between shadow-xs">
+            <span className="text-xs font-bold text-slate-500">{t.newPatients}</span>
+            <div className="flex items-baseline gap-3 my-2">
+              <span className="text-4xl font-extrabold text-slate-900">54</span>
+              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">^ 51%</span>
+            </div>
+            <span className="text-[11px] text-slate-400">Pre-marital couples screened</span>
+          </div>
+
+          {/* Old Patients Card */}
+          <div className="bg-[#FAFCFA] border border-slate-100 rounded-3xl p-5 flex flex-col justify-between shadow-xs">
+            <span className="text-xs font-bold text-slate-500">{t.oldPatients}</span>
+            <div className="flex items-baseline gap-3 my-2">
+              <span className="text-4xl font-extrabold text-slate-900">32</span>
+              <span className="text-xs font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full">v 02%</span>
+            </div>
+            <span className="text-[11px] text-slate-400">Follow-up PGT-M reviews</span>
+          </div>
+
+          {/* Analytics Wave Card */}
+          <div className="bg-[#FAFCFA] border border-slate-100 rounded-3xl p-5 flex flex-col justify-between shadow-xs relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500">{t.analytics}</span>
+              <span className="text-[10px] text-slate-400 font-semibold">{t.thisWeek} v</span>
+            </div>
+            {/* SVG Wave Line */}
+            <div className="my-2 relative">
+              <svg className="w-full h-12" viewBox="0 0 100 40" fill="none">
+                <path d="M0 30 Q25 35 50 15 T100 20" stroke="#74B47C" strokeWidth="2.5" fill="none" />
+                <circle cx="50" cy="15" r="3.5" fill="#74B47C" />
+              </svg>
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">
+                38%
+              </div>
+            </div>
+            <div className="flex justify-between text-[9px] text-slate-400">
+              <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Split: Events & Your Patients Today (Image 1) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          {/* Events Card */}
+          <div className="bg-[#FAFCFA] border border-slate-100 rounded-3xl p-5 space-y-4 shadow-xs">
+            <h4 className="font-bold text-slate-900 text-sm">{t.events}</h4>
+            
+            {/* Event Item 1 */}
+            <div className="bg-white rounded-2xl p-3.5 border border-slate-100 flex items-center justify-between">
+              <div className="space-y-1">
+                <div className="font-bold text-xs text-slate-800">DoH Genetic Board Review</div>
+                <div className="text-[11px] text-slate-400">13:30 - 14:50</div>
+                <div className="flex items-center -space-x-1.5 pt-1">
+                  <div className="w-5 h-5 rounded-full bg-blue-400 border border-white text-[9px] text-white flex items-center justify-center">D</div>
+                  <div className="w-5 h-5 rounded-full bg-emerald-400 border border-white text-[9px] text-white flex items-center justify-center">F</div>
+                  <div className="w-5 h-5 rounded-full bg-slate-300 border border-white text-[9px] text-slate-700 flex items-center justify-center font-bold">+4</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-5 bg-[#74B47C] rounded-full p-0.5 cursor-pointer flex justify-end">
+                  <div className="w-4 h-4 bg-white rounded-full"></div>
+                </div>
+                <button className="w-7 h-7 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200">
+                  ✎
+                </button>
+              </div>
+            </div>
+
+            {/* Event Item 2 */}
+            <div className="bg-white rounded-2xl p-3.5 border border-slate-100 flex items-center justify-between">
+              <div className="space-y-1">
+                <div className="font-bold text-xs text-slate-800">Concordant Case Teleconference</div>
+                <div className="text-[11px] text-slate-400">20:00 - 21:30</div>
+                <div className="flex items-center -space-x-1.5 pt-1">
+                  <div className="w-5 h-5 rounded-full bg-amber-400 border border-white text-[9px] text-white flex items-center justify-center">S</div>
+                  <div className="w-5 h-5 rounded-full bg-rose-400 border border-white text-[9px] text-white flex items-center justify-center">M</div>
+                  <div className="w-5 h-5 rounded-full bg-slate-300 border border-white text-[9px] text-slate-700 flex items-center justify-center font-bold">+6</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-5 bg-slate-200 rounded-full p-0.5 cursor-pointer">
+                  <div className="w-4 h-4 bg-white rounded-full"></div>
+                </div>
+                <button className="w-7 h-7 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200">
+                  ✎
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Your Patients Today List (Image 1) */}
+          <div className="bg-[#FAFCFA] border border-slate-100 rounded-3xl p-5 space-y-3 shadow-xs">
+            <div className="flex items-center justify-between">
+              <h4 className="font-bold text-slate-900 text-sm">{t.yourPatientsToday}</h4>
+              <button className="text-[11px] font-bold text-[#74B47C] hover:underline">{t.allPatients}</button>
+            </div>
+
+            {/* Patient 1 */}
+            <div className="bg-white rounded-2xl p-3 border border-slate-100 flex items-center justify-between hover:border-slate-200 transition">
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] font-bold text-slate-400 w-16">10:00 am</span>
+                <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs">
+                  SH
+                </div>
+                <div>
+                  <h5 className="font-bold text-xs text-slate-900">Sarah Hosten</h5>
+                  <p className="text-[10px] text-slate-400">Diagnosis: Tier 1 Baseline Carrier</p>
+                </div>
+              </div>
+              <button className="text-slate-400 hover:text-slate-600 font-bold px-2">⋮</button>
+            </div>
+
+            {/* Patient 2 (Elevated Active Card) */}
+            <div className="bg-white rounded-2xl p-3 border-2 border-emerald-300 shadow-sm flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] font-bold text-emerald-700 w-16">11:15 am</span>
+                <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-xs">
+                  DS
+                </div>
+                <div>
+                  <h5 className="font-bold text-xs text-slate-900">Dakota Smith & Julia</h5>
+                  <p className="text-[10px] text-amber-600 font-bold">Tier 3 Concordant HBB Alert</p>
+                </div>
+              </div>
+              <button className="text-slate-400 hover:text-slate-600 font-bold px-2">⋮</button>
+            </div>
+
+            {/* Patient 3 */}
+            <div className="bg-white rounded-2xl p-3 border border-slate-100 flex items-center justify-between hover:border-slate-200 transition">
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] font-bold text-slate-400 w-16">12:30 pm</span>
+                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-xs">
+                  JL
+                </div>
+                <div>
+                  <h5 className="font-bold text-xs text-slate-900">John Lane</h5>
+                  <p className="text-[10px] text-slate-400">Diagnosis: G6PD Discordant Counseling</p>
+                </div>
+              </div>
+              <button className="text-slate-400 hover:text-slate-600 font-bold px-2">⋮</button>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* Right Column: User Profile Activity & Support Chat (Image 1) */}
+      <aside className="w-full lg:w-80 space-y-6 shrink-0">
+        
+        {/* User Activity Card */}
+        <div className="bg-white rounded-[32px] p-6 shadow-sm flex flex-col items-center text-center space-y-4">
+          <div className="relative w-20 h-20">
+            <svg className="w-20 h-20 transform -rotate-90">
+              <circle cx="40" cy="40" r="34" stroke="#EDF5EF" strokeWidth="6" fill="transparent" />
+              <circle cx="40" cy="40" r="34" stroke="#74B47C" strokeWidth="6" strokeDasharray="213" strokeDashoffset="30" strokeLinecap="round" fill="transparent" strokeDasharray="4 4" />
+            </svg>
+            <div className="absolute inset-2 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center font-bold text-slate-700">
+              FA
+            </div>
+          </div>
+
+          <div>
+            <span className="text-[11px] text-slate-400 block">{t.yourActivityToday}</span>
+            <span className="text-3xl font-extrabold text-slate-900">86%</span>
+          </div>
+
+          <button className="w-full bg-[#F3F7F4] hover:bg-[#E6F0E8] text-[#74B47C] font-bold text-xs py-2.5 rounded-full flex items-center justify-center gap-2 transition">
+            <span>{t.allActivity}</span>
+            <span className="w-4 h-4 rounded-full bg-[#74B47C] text-white flex items-center justify-center text-[10px]">&gt;</span>
+          </button>
+        </div>
+
+        {/* Support Chat Widget (Image 1) */}
+        <div className="bg-white rounded-[32px] p-5 shadow-sm space-y-4 flex flex-col justify-between h-[360px]">
+          {/* Header */}
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-bold">
+                SN
+              </div>
+              <div>
+                <h5 className="font-bold text-xs text-slate-900">Saeed & Fatima (Couple)</h5>
+                <span className="text-[10px] text-emerald-600 flex items-center gap-1 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Online
+                </span>
+              </div>
+            </div>
+            <span className="text-[10px] font-mono bg-slate-100 px-2 py-0.5 rounded text-slate-600">AE-9482</span>
+          </div>
+
+          {/* Messages Area */}
+          <div className="flex-1 overflow-y-auto space-y-3 pr-1 text-xs">
+            {chatMessages.map(msg => (
+              <div
+                key={msg.id}
+                className={`flex flex-col ${msg.sender === 'counselor' ? 'items-start' : 'items-end'}`}
+              >
+                <div
+                  className={`max-w-[85%] rounded-2xl px-3.5 py-2 leading-relaxed ${
+                    msg.sender === 'counselor'
+                      ? 'bg-[#74B47C] text-white rounded-tl-xs'
+                      : 'bg-slate-100 text-slate-800 rounded-tr-xs'
+                  }`}
+                >
+                  {msg.text}
+                </div>
+                <span className="text-[9px] text-slate-400 mt-1 px-1">{msg.time}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Input Box */}
+          <form onSubmit={handleSendMessage} className="relative pt-2">
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder="Your message..."
+              className="w-full bg-[#F3F7F4] rounded-full pl-4 pr-10 py-2.5 text-xs text-slate-800 outline-hidden"
+            />
+            <button
+              type="submit"
+              className="absolute right-3 top-4 text-[#74B47C] hover:text-[#5E9B66]"
+            >
+              <svg className="w-4 h-4 transform rotate-45" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+              </svg>
+            </button>
+          </form>
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+// =======================================================================
+// COMPONENT 3: PRIVACY & COMPLIANCE VIEW (Matching Image 2)
+// =======================================================================
+function PrivacyComplianceView({ t, isRTL, setShowReceiptModal, addAuditLog }) {
+  const [consentRows, setConsentRows] = useState([
+    { id: 1, date: '2026-01-10 09:14 AM', program: 'UAE National Genome Program (Pre-marital)', type: 'Individual Genomic Education', action: 'Granted', channel: 'UAE Pass Biometrics', status: 'Active' },
+    { id: 2, date: '2026-01-10 09:14 AM', program: 'Malaffi Health Information Exchange', type: 'Clinical Interpretation Vault', action: 'Granted', channel: 'Citizen Portal', status: 'Active' },
+    { id: 3, date: '2026-01-10 09:14 AM', program: 'Couple Compatibility Protocol', type: 'Cryptographic PSI Matching', action: 'Granted', channel: 'Citizen Portal', status: 'Active' },
+    { id: 4, date: '2025-03-18 11:02 AM', program: 'Extended Family Cascade Notification', type: 'Anonymized Relative Alert', action: 'Granted', channel: 'DoH Genetic Center', status: 'Expiring Soon' },
+    { id: 5, date: '2025-03-18 11:02 AM', program: 'Secondary Research Biobank', type: 'De-identified Variant Sharing', action: 'Granted', channel: 'DoH Genetic Center', status: 'Revoked' },
+    { id: 6, date: '2024-11-02 03:40 PM', program: 'Commercial Screening Archive', type: 'External Cross-Border Transfer', action: 'Revoked', channel: 'Patient Portal', status: 'Revoked' },
+  ]);
+
+  return (
+    <div className="space-y-6 animate-fadeIn">
+      {/* Title (Image 2) */}
+      <div className="border-l-4 border-blue-600 pl-4 py-1">
+        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+          {t.privacyCompliance}
+        </h1>
+        <p className="text-slate-500 text-xs mt-1">
+          {isRTL
+            ? 'استعرض سجل التفويضات الصادرة، ومارس حقوقك في سحب الموافقة، وحمل إيصالات التشفير الموثقة.'
+            : 'View your consent history, exercise your privacy rights, and download your consent receipts.'}
+        </p>
+      </div>
+
+      {/* Main Table Card (Image 2) */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        {/* Card Header */}
+        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs">
+              ✓
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-slate-900">{t.consentHistory}</h3>
+              <p className="text-xs text-slate-400">{t.consentHistorySub}</p>
+            </div>
+          </div>
+          <button className="text-slate-400 hover:text-slate-600">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+        </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-[#FAFBFD] text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-100">
+              <tr>
+                <th className="py-3 px-5 font-semibold">DATE & TIME</th>
+                <th className="py-3 px-5 font-semibold">PROGRAM</th>
+                <th className="py-3 px-5 font-semibold">CONSENT TYPE</th>
+                <th className="py-3 px-5 font-semibold">ACTION</th>
+                <th className="py-3 px-5 font-semibold">CHANNEL</th>
+                <th className="py-3 px-5 font-semibold">STATUS</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-slate-700">
+              {consentRows.map((row) => (
+                <tr key={row.id} className="hover:bg-slate-50/70 transition">
+                  <td className="py-3.5 px-5 font-medium whitespace-nowrap text-slate-900">{row.date}</td>
+                  <td className="py-3.5 px-5 font-medium">{row.program}</td>
+                  <td className="py-3.5 px-5 text-slate-500">{row.type}</td>
+                  <td className="py-3.5 px-5 font-semibold">{row.action}</td>
+                  <td className="py-3.5 px-5 text-slate-500">{row.channel}</td>
+                  <td className="py-3.5 px-5">
+                    <span className={`inline-flex items-center gap-1.5 font-bold ${
+                      row.status === 'Active'
+                        ? 'text-emerald-600'
+                        : row.status === 'Expiring Soon'
+                        ? 'text-amber-600'
+                        : 'text-rose-600'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        row.status === 'Active' ? 'bg-emerald-500' : row.status === 'Expiring Soon' ? 'bg-amber-500' : 'bg-rose-500'
+                      }`}></span>
+                      {row.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Bottom Actions (Image 2) */}
+        <div className="p-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-end">
+          <button
+            onClick={() => {
+              setShowReceiptModal(true);
+              addAuditLog('READ', 'Consent Vault', 'Downloaded signed cryptographic consent receipt PDF');
+            }}
+            className="flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold px-4 py-2 rounded-xl border border-slate-200 shadow-xs transition"
+          >
+            <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            {t.downloadReceipt}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =======================================================================
+// COMPONENT 4: MEDFLOW AUDIT LOG & GOVERNANCE VIEW (Matching Image 6)
+// =======================================================================
+function MedFlowAuditView({ t, isRTL, auditLogs }) {
+  const [filterAction, setFilterAction] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredLogs = useMemo(() => {
+    return auditLogs.filter(log => {
+      const matchAction = filterAction === 'ALL' || log.action === filterAction;
+      const matchSearch = searchQuery === '' || 
+        log.user.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        log.details.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        log.module.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchAction && matchSearch;
+    });
+  }, [auditLogs, filterAction, searchQuery]);
+
+  return (
+    <div className="flex min-h-[calc(100vh-65px)] bg-[#F8FAFC]">
+      
+      {/* MedFlow Left Sidebar (Matching Image 6) */}
+      <aside className="w-64 bg-white border-r border-slate-200 p-5 hidden md:flex flex-col justify-between shrink-0">
+        <div>
+          {/* MedFlow Logo */}
+          <div className="flex items-center gap-2.5 px-2 py-3 mb-6">
+            <svg className="w-6 h-6 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            <span className="font-extrabold text-xl tracking-tight text-slate-900">MedFlow</span>
+          </div>
+
+          {/* Nav List (Image 6) */}
+          <nav className="space-y-1 text-xs font-semibold text-slate-600">
+            <div className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 cursor-pointer">
+              <span>📈</span><span>Patient Monitoring</span>
+            </div>
+            <div className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 cursor-pointer">
+              <span>🔔</span><span>Alerts & Triage</span>
+            </div>
+            <div className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 cursor-pointer">
+              <span>👥</span><span>Cohorts & Trends</span>
+            </div>
+            <div className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 cursor-pointer">
+              <span>📅</span><span>Appointments</span>
+            </div>
+            <div className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 cursor-pointer">
+              <span>📋</span><span>Care Plans</span>
+            </div>
+            <div className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 cursor-pointer">
+              <span>🛡️</span><span>Roles & Permissions</span>
+            </div>
+            <div className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 cursor-pointer">
+              <span>📊</span><span>Report Builder</span>
+            </div>
+            {/* Selected Item */}
+            <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-blue-50 text-blue-700 font-bold border border-blue-200">
+              <span>📜</span><span>Audit Log & Traceability</span>
+            </div>
+          </nav>
+        </div>
+
+        {/* User Card Bottom (Image 6) */}
+        <div className="pt-4 border-t border-slate-100 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-800 font-bold flex items-center justify-center text-xs">
+            DR
+          </div>
+          <div>
+            <h5 className="font-bold text-xs text-slate-900">Dr. Roberts / Auditor</h5>
+            <p className="text-[10px] text-slate-400">DoH Malaffi Inspector</p>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Governance Content Area (Image 6) */}
+      <main className="flex-1 p-6 lg:p-8 space-y-6 overflow-y-auto">
+        
+        {/* Search Bar at Top */}
+        <div className="max-w-xl">
+          <input
+            type="text"
+            placeholder="Search patients, IDs, records..."
+            className="w-full bg-white border border-slate-200 rounded-full pl-5 pr-4 py-2 text-xs text-slate-700 outline-hidden"
+          />
+        </div>
+
+        {/* Title */}
+        <div>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+            {t.auditLogTitle}
+          </h1>
+          <p className="text-slate-500 text-xs mt-1">
+            {t.auditLogSub}
+          </p>
+        </div>
+
+        {/* 4 Stat Cards Row (Image 6) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 flex items-center justify-between shadow-xs">
+            <div>
+              <span className="text-[11px] text-slate-400 font-semibold block">{t.totalEvents}</span>
+              <span className="text-2xl font-bold text-slate-900">{auditLogs.length}</span>
+              <span className="text-[10px] text-slate-400 block">Today</span>
+            </div>
+            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-sm font-bold">
+              📄
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 flex items-center justify-between shadow-xs">
+            <div>
+              <span className="text-[11px] text-slate-400 font-semibold block">{t.successful}</span>
+              <span className="text-2xl font-bold text-slate-900">{auditLogs.filter(l => l.status === 'Success').length}</span>
+              <span className="text-[10px] text-emerald-600 font-bold block">100% escalation compliance</span>
+            </div>
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm font-bold">
+              🛡️
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 flex items-center justify-between shadow-xs">
+            <div>
+              <span className="text-[11px] text-slate-400 font-semibold block">{t.failedActions}</span>
+              <span className="text-2xl font-bold text-slate-900">{auditLogs.filter(l => l.status === 'Failed').length}</span>
+              <span className="text-[10px] text-rose-500 font-bold block">Blocked / Zero Leak</span>
+            </div>
+            <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-sm font-bold">
+              ⚠️
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 flex items-center justify-between shadow-xs">
+            <div>
+              <span className="text-[11px] text-slate-400 font-semibold block">{t.activeUsers}</span>
+              <span className="text-2xl font-bold text-slate-900">12</span>
+              <span className="text-[10px] text-slate-400 block">In last 24h</span>
+            </div>
+            <div className="w-9 h-9 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center text-sm font-bold">
+              👤
+            </div>
+          </div>
+        </div>
+
+        {/* Filter Bar (Image 6) */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-4 shadow-xs">
+          <div className="relative flex-1 min-w-[200px]">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by user, action, or details..."
+              className="w-full bg-slate-50 rounded-xl px-4 py-2 text-xs text-slate-700 outline-hidden border border-slate-200"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <select
+              value={filterAction}
+              onChange={(e) => setFilterAction(e.target.value)}
+              className="bg-slate-50 border border-slate-200 text-xs font-semibold px-3 py-2 rounded-xl text-slate-700 outline-hidden cursor-pointer"
+            >
+              <option value="ALL">All Actions</option>
+              <option value="ZKP_MATCH">ZKP_MATCH</option>
+              <option value="UPDATE">UPDATE</option>
+              <option value="CREATE">CREATE</option>
+              <option value="READ">READ</option>
+              <option value="DELETE">DELETE</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Immutable Audit Table (Image 6) */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-[#FAFBFD] text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-100">
+                <tr>
+                  <th className="py-3 px-5 font-semibold">TIMESTAMP</th>
+                  <th className="py-3 px-5 font-semibold">USER</th>
+                  <th className="py-3 px-5 font-semibold">ACTION</th>
+                  <th className="py-3 px-5 font-semibold">MODULE</th>
+                  <th className="py-3 px-5 font-semibold">DETAILS</th>
+                  <th className="py-3 px-5 font-semibold">STATUS</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700">
+                {filteredLogs.map(log => {
+                  let actionClass = 'bg-blue-100 text-blue-800';
+                  if (log.action === 'UPDATE') actionClass = 'bg-amber-100 text-amber-800';
+                  if (log.action === 'DELETE') actionClass = 'bg-rose-100 text-rose-800';
+                  if (log.action === 'READ') actionClass = 'bg-purple-100 text-purple-800';
+                  if (log.action === 'ZKP_MATCH') actionClass = 'bg-indigo-100 text-indigo-800 font-mono';
+
+                  return (
+                    <tr key={log.id} className="hover:bg-slate-50/70 transition">
+                      <td className="py-3.5 px-5 font-mono text-[11px] text-slate-600 whitespace-nowrap">{log.time}</td>
+                      <td className="py-3.5 px-5 whitespace-nowrap">
+                        <div className="font-bold text-slate-900">{log.user}</div>
+                        <span className="text-[10px] text-slate-400">{log.role}</span>
+                      </td>
+                      <td className="py-3.5 px-5">
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${actionClass}`}>
+                          {log.action}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-5 font-medium text-slate-800 whitespace-nowrap">{log.module}</td>
+                      <td className="py-3.5 px-5 text-slate-600 max-w-md">{log.details}</td>
+                      <td className="py-3.5 px-5 whitespace-nowrap">
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                          log.status === 'Success'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            : 'bg-rose-50 text-rose-700 border border-rose-200'
+                        }`}>
+                          {log.status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+// =======================================================================
+// MODAL 1: CRYPTOGRAPHIC PSI / ZKP INSPECTOR (Interactive Simulator)
+// =======================================================================
+function CryptographicPsiModal({ scenario, onClose, isRTL }) {
+  const [step, setStep] = useState(1);
+
+  const sampleAllelesA = [
+    { gene: 'HBB', variant: 'c.92+1G>A', condition: 'Beta-Thalassemia', salt: 'sA_9281' },
+    { gene: 'G6PD', variant: 'c.563C>T', condition: 'G6PD Mediterranean', salt: 'sA_4102' },
+    { gene: 'CFTR', variant: 'c.1521_1523delCTT', condition: 'Cystic Fibrosis', salt: 'sA_7719' }
+  ];
+
+  const sampleAllelesB = scenario === 'concordant' ? [
+    { gene: 'HBB', variant: 'c.92+1G>A', condition: 'Beta-Thalassemia', salt: 'sB_3301' },
+    { gene: 'PAH', variant: 'c.1066-11G>A', condition: 'PKU', salt: 'sB_8122' }
+  ] : [
+    { gene: 'SMN1', variant: 'c.840C>T', condition: 'Spinal Muscular Atrophy', salt: 'sB_1092' }
+  ];
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl max-w-2xl w-full p-6 md:p-8 shadow-2xl border border-slate-200 space-y-6 max-h-[90vh] overflow-y-auto">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-mono font-bold text-xs">
+              PSI
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900 text-base">
+                {isRTL ? 'فاحص بروتوكول التشفير الصفري (Private Set Intersection)' : 'Private Set Intersection (PSI) Cryptographic Inspector'}
+              </h3>
+              <p className="text-xs text-slate-400">Mathematical proof of zero unshared data leakage</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 font-bold text-lg">✕</button>
+        </div>
+
+        {/* Interactive Steps Bar */}
+        <div className="flex items-center justify-between text-xs font-bold text-slate-500 bg-slate-100 p-1.5 rounded-2xl">
+          <button
+            onClick={() => setStep(1)}
+            className={`flex-1 py-1.5 rounded-xl transition ${step === 1 ? 'bg-white text-blue-700 shadow-xs' : ''}`}
+          >
+            1. Allele Hashing
+          </button>
+          <button
+            onClick={() => setStep(2)}
+            className={`flex-1 py-1.5 rounded-xl transition ${step === 2 ? 'bg-white text-blue-700 shadow-xs' : ''}`}
+          >
+            2. Salted Blinding
+          </button>
+          <button
+            onClick={() => setStep(3)}
+            className={`flex-1 py-1.5 rounded-xl transition ${step === 3 ? 'bg-white text-blue-700 shadow-xs' : ''}`}
+          >
+            3. Intersection Output
+          </button>
+        </div>
+
+        {/* Step Contents */}
+        {step === 1 && (
+          <div className="space-y-4 text-xs">
+            <p className="text-slate-600">
+              Each user's raw genomic variant files (VCF) remain in their respective lab enclaves. Standardized variants are converted into deterministic canonical strings:
+            </p>
+            <div className="p-4 bg-slate-900 text-emerald-400 font-mono rounded-2xl space-y-2">
+              <div>Partner A: HBB:chr11:5227002:G&gt;A =&gt; SHA-256("HBB_c.92+1G&gt;A")</div>
+              <div>Partner B: HBB:chr11:5227002:G&gt;A =&gt; SHA-256("HBB_c.92+1G&gt;A")</div>
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-4 text-xs">
+            <p className="text-slate-600">
+              Using a Diffie-Hellman-based Private Set Intersection (DH-PSI) exchange, both parties exponentiate their sets with secret keys $k_A$ and $k_B$:
+            </p>
+            <div className="p-4 bg-slate-900 text-indigo-300 font-mono rounded-2xl space-y-1">
+              <div>Partner A transmits: $H(x)^{k_A}$</div>
+              <div>Partner B transmits: $H(y)^{k_B}$</div>
+              <div className="text-amber-400 pt-1">Commutative Property: $(H(x)^{k_A})^{k_B} = (H(y)^{k_B})^{k_A}$</div>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-4 text-xs">
+            <p className="text-slate-600">
+              The engine computes the set intersection:
+            </p>
+            <div className={`p-4 rounded-2xl border ${
+              scenario === 'concordant'
+                ? 'bg-amber-50 border-amber-300 text-amber-900'
+                : 'bg-emerald-50 border-emerald-300 text-emerald-900'
+            }`}>
+              <div className="font-bold text-sm mb-1">
+                {scenario === 'concordant'
+                  ? 'Intersection Result: { HBB c.92+1G>A (Beta-Thalassemia) }'
+                  : 'Intersection Result: ∅ (Empty Set)'}
+              </div>
+              <p className="text-xs">
+                {scenario === 'concordant'
+                  ? 'Concordant risk identified. Neither party learned any non-matching variants.'
+                  : 'Zero concordant risk. Partner A\'s carrier status for G6PD remains completely hidden from Partner B.'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="flex justify-end pt-4 border-t border-slate-100">
+          <button
+            onClick={onClose}
+            className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition"
+          >
+            Close Inspector
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =======================================================================
+// MODAL 2: CONSENT RECEIPT MODAL (Simulated Official DoH PDF Certificate)
+// =======================================================================
+function ConsentReceiptModal({ onClose, isRTL }) {
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl max-w-lg w-full p-8 shadow-2xl border border-slate-200 space-y-6">
+        {/* DoH Header */}
+        <div className="text-center pb-4 border-b border-slate-100 space-y-1">
+          <div className="w-12 h-12 mx-auto rounded-full bg-emerald-700 text-white flex items-center justify-center font-bold text-sm">
+            DoH
+          </div>
+          <h3 className="font-bold text-slate-900 text-base">Department of Health - Abu Dhabi</h3>
+          <p className="text-[11px] text-slate-400 font-mono">Malaffi Health Information Exchange Consent Certificate</p>
+        </div>
+
+        {/* Certificate Details */}
+        <div className="space-y-3 text-xs bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+          <div className="flex justify-between">
+            <span className="text-slate-400">Subject:</span>
+            <span className="font-bold text-slate-800">Saeed Al-Nuaimi (EID: 784-1994-*******)</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-400">Consent Tier:</span>
+            <span className="font-bold text-emerald-700">Tier 2: Couple Cryptographic PSI</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-400">Timestamp:</span>
+            <span className="font-mono text-slate-700">2026-02-04T14:15:42+04:00</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-400">Cryptographic Hash:</span>
+            <span className="font-mono text-[10px] text-slate-600 truncate max-w-[200px]">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-400">Signature Authority:</span>
+            <span className="font-bold text-blue-700">UAE Pass Digital Signature (LoA High)</span>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-2">
+          <button
+            onClick={() => {
+              alert('Official PDF downloaded to your local device.');
+              onClose();
+            }}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 rounded-xl transition"
+          >
+            Download Signed PDF Receipt
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =======================================================================
+// MODAL 3: VALUES CLARIFICATION WORKSHEET (Stage 5 Pre-Counseling Tool)
+// =======================================================================
+function ValuesClarificationModal({ onClose, onSave, isRTL }) {
+  const [slider1, setSlider1] = useState(3);
+  const [slider2, setSlider2] = useState(4);
+  const [slider3, setSlider3] = useState(5);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl max-w-xl w-full p-6 md:p-8 shadow-2xl border border-slate-200 space-y-6">
+        <div>
+          <h3 className="font-bold text-slate-900 text-lg">
+            {isRTL ? 'ورقة توضيح القيم والأولويات الشخصية' : 'Values Clarification Exercise (Pre-Counseling Prep)'}
+          </h3>
+          <p className="text-xs text-slate-500 mt-1">
+            {isRTL
+              ? 'ورقة عمل خاصة وسرية تساعد المرشد الوراثي على فهم أولوياتكم الدينية والثقافية والعائلية دون أي توجيه إجباري.'
+              : 'A reflective digital worksheet helping your accredited counselor align discussions respectfully with your cultural, religious, and reproductive timeline priorities.'}
+          </p>
+        </div>
+
+        <div className="space-y-5 text-xs">
+          {/* Question 1 */}
+          <div className="space-y-1.5">
+            <label className="font-bold text-slate-800 block">
+              1. {isRTL ? 'مدى ارتياحكم لاستخدام تقنيات أطفال الأنابيب وفحص الأجنة (PGT-M) لتفادي انتقال المرض:' : 'Comfort level with assisted reproductive technologies (PGT-M via IVF) to avoid passing on genetic conditions:'}
+            </label>
+            <input
+              type="range"
+              min="1"
+              max="5"
+              value={slider1}
+              onChange={(e) => setSlider1(e.target.value)}
+              className="w-full accent-blue-600 cursor-pointer"
+            />
+            <div className="flex justify-between text-[10px] text-slate-400">
+              <span>Very Uncomfortable</span>
+              <span className="font-bold text-blue-600">Selected: {slider1}/5</span>
+              <span>Very Comfortable</span>
+            </div>
+          </div>
+
+          {/* Question 2 */}
+          <div className="space-y-1.5">
+            <label className="font-bold text-slate-800 block">
+              2. {isRTL ? 'أهمية الجدول الزمني للزواج والإنجاب بالنسبة للعائلتين:' : 'Importance of family timelines and cultural expectations around immediate marriage & conception:'}
+            </label>
+            <input
+              type="range"
+              min="1"
+              max="5"
+              value={slider2}
+              onChange={(e) => setSlider2(e.target.value)}
+              className="w-full accent-blue-600 cursor-pointer"
+            />
+            <div className="flex justify-between text-[10px] text-slate-400">
+              <span>Flexible Timeline</span>
+              <span className="font-bold text-blue-600">Selected: {slider2}/5</span>
+              <span>Strict / Imminent</span>
+            </div>
+          </div>
+
+          {/* Question 3 */}
+          <div className="space-y-1.5">
+            <label className="font-bold text-slate-800 block">
+              3. {isRTL ? 'الرغبة في إشراك المرشد الديني أو الثقافي في حال وجود قرارات معقدة:' : 'Preference for incorporating spiritual / religious guidance into medical counseling sessions:'}
+            </label>
+            <input
+              type="range"
+              min="1"
+              max="5"
+              value={slider3}
+              onChange={(e) => setSlider3(e.target.value)}
+              className="w-full accent-blue-600 cursor-pointer"
+            />
+            <div className="flex justify-between text-[10px] text-slate-400">
+              <span>Medical Focus Only</span>
+              <span className="font-bold text-blue-600">Selected: {slider3}/5</span>
+              <span>High Spiritual Alignment</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+          <button
+            onClick={onClose}
+            className="text-xs font-bold text-slate-500 hover:text-slate-800 px-4 py-2"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onSave}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition shadow-xs"
+          >
+            Save for Counselor Review
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =======================================================================
+// MODAL 4: TEACH-BACK COMPREHENSION CHECKPOINT (Stage 3 Check)
+// =======================================================================
+function TeachBackModal({ onClose, onPass, isRTL }) {
+  const [q1, setQ1] = useState(null);
+  const [q2, setQ2] = useState(null);
+  const [q3, setQ3] = useState(null);
+
+  const handleSubmit = () => {
+    let score = 0;
+    if (q1 === 'b') score++;
+    if (q2 === 'c') score++;
+    if (q3 === 'a') score++;
+
+    if (score >= 2) {
+      onPass(score);
+    } else {
+      alert(isRTL ? 'يرجى مراجعة الإجابات، أو مناقشتها مباشرة مع المرشد الوراثي لضمان الوضوح.' : 'Comprehension checkpoint flagged. Your counselor will review these concepts during your session.');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl max-w-lg w-full p-6 md:p-8 shadow-2xl border border-slate-200 space-y-6">
+        <div>
+          <h3 className="font-bold text-slate-900 text-lg">
+            {isRTL ? 'التحقق التفاعلي من الفهم (Teach-Back)' : 'Interactive Teach-Back Checkpoint'}
+          </h3>
+          <p className="text-xs text-slate-500 mt-1">
+            {isRTL
+              ? 'تأكيد بسيط للتأكد من وضوح الفرق بين كونك حاملاً لطفرة سليمة وبين الإصابة السريرية.'
+              : 'A brief 3-question checkpoint ensuring clear distinction between healthy carrier status and clinical diagnosis.'}
+          </p>
+        </div>
+
+        <div className="space-y-4 text-xs">
+          {/* Question 1 */}
+          <div className="space-y-2">
+            <span className="font-bold text-slate-800 block">
+              1. What does it mean if a screening report says you are a "carrier" for Beta-Thalassemia?
+            </span>
+            <div className="space-y-1">
+              <label className="flex items-center gap-2 p-2 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="q1" value="a" onChange={() => setQ1('a')} />
+                <span>I have an active illness and need immediate treatment.</span>
+              </label>
+              <label className="flex items-center gap-2 p-2 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="q1" value="b" onChange={() => setQ1('b')} />
+                <span className="font-semibold text-slate-900">I am healthy with no symptoms, but carry one recessive gene copy.</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Question 2 */}
+          <div className="space-y-2">
+            <span className="font-bold text-slate-800 block">
+              2. If both partners carry the same recessive gene, what is the chance for each pregnancy to have the condition?
+            </span>
+            <div className="space-y-1">
+              <label className="flex items-center gap-2 p-2 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="q2" value="a" onChange={() => setQ2('a')} />
+                <span>100% chance</span>
+              </label>
+              <label className="flex items-center gap-2 p-2 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="q2" value="c" onChange={() => setQ2('c')} />
+                <span className="font-semibold text-slate-900">25% (1 in 4) chance per pregnancy</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Question 3 */}
+          <div className="space-y-2">
+            <span className="font-bold text-slate-800 block">
+              3. Is carrying recessive genetic variants rare among humans?
+            </span>
+            <div className="space-y-1">
+              <label className="flex items-center gap-2 p-2 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="q3" value="a" onChange={() => setQ3('a')} />
+                <span className="font-semibold text-slate-900">No, every human naturally carries 3 to 5 recessive variants.</span>
+              </label>
+              <label className="flex items-center gap-2 p-2 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="q3" value="b" onChange={() => setQ3('b')} />
+                <span>Yes, it only affects a very small fraction of people.</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+          <button onClick={onClose} className="text-xs font-bold text-slate-500 hover:text-slate-800 px-4 py-2">
+            Close
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition shadow-xs"
+          >
+            Submit & Verify
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// -------------------------------------------------------------
+// MOUNT APPLICATION
+// -------------------------------------------------------------
+const rootElement = document.getElementById('root');
+const root = ReactDOM.createRoot(rootElement);
+root.render(<App />);
+
+</script>
+</body>
+</html>
